@@ -694,6 +694,7 @@
 
     // ====== Data File Configuration ======
     const DATA_FILE = 'family_data.json';
+    const IS_GITHUB_PAGES = location.hostname.endsWith('.github.io');
     let DATA = null;
     let dataFileHandle = null;
     let appInitialized = false;
@@ -702,6 +703,11 @@
     const saveStatus = document.getElementById('save-status');
 
     function showDataFileButton(message) {
+      if (IS_GITHUB_PAGES) {
+        dataFileButton.style.display = 'none';
+        saveStatus.style.display = 'none';
+        return;
+      }
       if (message) saveStatus.textContent = message;
       dataFileButton.style.display = 'block';
     }
