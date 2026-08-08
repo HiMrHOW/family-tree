@@ -694,6 +694,7 @@
 
     // ====== Data File Configuration ======
     const DATA_FILE = 'family_data.json';
+    const DATA_VERSION = 'e6bb5d8f';
     const IS_GITHUB_PAGES = location.hostname.endsWith('.github.io');
     let DATA = null;
     let dataFileHandle = null;
@@ -828,7 +829,7 @@
       document.getElementById('stats-line').textContent = '请先连接家谱 JSON 文件';
       showDataFileButton('选择文件一次，之后每次编辑都会直接保存');
     } else {
-      fetch(encodeURI(DATA_FILE))
+      fetch(encodeURI(DATA_FILE) + '?v=' + DATA_VERSION, { cache: 'no-store' })
         .then(r => {
           if (!r.ok) throw new Error('HTTP ' + r.status);
           return r.json();
