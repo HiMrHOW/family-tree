@@ -134,6 +134,38 @@
       transform: scale(.96)
     }
 
+    #data-file-button {
+      display: none;
+      width: 100%;
+      margin: 0 0 10px;
+      padding: 8px;
+      background: rgba(255, 140, 0, .12);
+      border: 1px solid rgba(255, 140, 0, .45);
+      border-radius: 6px;
+      color: #ffad42;
+      cursor: pointer;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 12px;
+    }
+
+    #data-file-button:hover {
+      background: rgba(255, 140, 0, .2);
+    }
+
+    #data-file-button.connected {
+      border-color: rgba(80, 180, 110, .5);
+      color: #7bd692;
+      cursor: default;
+    }
+
+    #save-status {
+      min-height: 16px;
+      margin: -4px 0 8px;
+      color: #808080;
+      font-size: 10px;
+      text-align: center;
+    }
+
     /* Minimap */
     #minimap-container {
       width: 100%;
@@ -239,8 +271,8 @@
       position: fixed;
       right: 16px;
       bottom: 16px;
-      width: 280px;
-      max-height: 400px;
+      width: 310px;
+      max-height: 560px;
       background: rgba(20, 20, 28, .94);
       border: 1px solid rgba(212, 175, 55, .2);
       border-radius: 12px;
@@ -308,9 +340,23 @@
       background: rgba(212, 175, 55, .22)
     }
 
+    #info-edit-fields {
+      display: none;
+      border-top: 1px solid rgba(80, 80, 80, .3);
+      padding-top: 10px;
+    }
+
+    #info-edit-fields label {
+      display: block;
+      margin: 8px 0 4px;
+      color: #909090;
+      font-size: 11px;
+    }
+
+    #info-name-input,
+    #info-gen-input,
     #info-textarea {
       width: 100%;
-      min-height: 80px;
       background: rgba(30, 30, 40, .8);
       border: 1px solid rgba(100, 100, 100, .4);
       color: #c0c0c0;
@@ -319,13 +365,25 @@
       font-size: 12px;
       font-family: 'Noto Serif SC', serif;
       outline: none;
-      resize: vertical;
-      margin-top: 6px;
-      display: none;
       line-height: 1.6
     }
 
-    #info-save-btn {
+    #info-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    #info-edit-actions {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    #info-save-btn,
+    #info-add-child-btn,
+    #info-delete-btn,
+    #info-cancel-btn {
       background: rgba(212, 175, 55, .15);
       border: 1px solid rgba(212, 175, 55, .35);
       color: #D4AF37;
@@ -334,13 +392,29 @@
       cursor: pointer;
       font-family: 'Noto Serif SC', serif;
       font-size: 11px;
-      margin-top: 6px;
-      display: none;
+      padding: 7px 8px;
       transition: all .2s
     }
 
-    #info-save-btn:hover {
+    #info-save-btn:hover,
+    #info-add-child-btn:hover {
       background: rgba(212, 175, 55, .25)
+    }
+
+    #info-delete-btn {
+      color: #ff7777;
+      border-color: rgba(255, 107, 107, .35);
+      background: rgba(255, 107, 107, .08);
+    }
+
+    #info-delete-btn:hover {
+      background: rgba(255, 107, 107, .18);
+    }
+
+    #info-cancel-btn {
+      color: #909090;
+      border-color: rgba(120, 120, 120, .3);
+      background: rgba(120, 120, 120, .08);
     }
 
     #info-close {
@@ -417,174 +491,6 @@
       font-size: 12px;
       margin-top: 10px;
       min-height: 18px;
-    }
-
-    /* Update Log Link */
-    .ctrl-links {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-      margin-top: 8px;
-    }
-
-    .ctrl-links a {
-      color: #808080;
-      font-size: 11px;
-      cursor: pointer;
-      text-decoration: underline;
-      transition: color .2s;
-    }
-
-    .ctrl-links a:hover {
-      color: #D4AF37;
-    }
-
-    /* Update Log Panel */
-    #log-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, .6);
-      z-index: 8000;
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #log-panel {
-      width: 60%;
-      height: 90%;
-      background: rgba(20, 20, 28, .96);
-      border: 1px solid rgba(212, 175, 55, .25);
-      border-radius: 14px;
-      padding: 24px;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 40px rgba(0, 0, 0, .6);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    #log-panel h2 {
-      color: #D4AF37;
-      font-size: 18px;
-      margin: 0 0 16px 0;
-      flex-shrink: 0;
-    }
-
-    #log-panel .log-close {
-      position: absolute;
-      top: 16px;
-      right: 20px;
-      color: #606060;
-      cursor: pointer;
-      font-size: 18px;
-    }
-
-    #log-panel .log-close:hover {
-      color: #D4AF37;
-    }
-
-    #log-list {
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 8px;
-    }
-
-    #log-list::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    #log-list::-webkit-scrollbar-thumb {
-      background: rgba(212, 175, 55, .3);
-      border-radius: 2px;
-    }
-
-    .log-entry {
-      border-bottom: 1px solid rgba(60, 60, 60, .3);
-      padding: 12px 0;
-    }
-
-    .log-entry:last-child {
-      border-bottom: none;
-    }
-
-    .log-time {
-      color: #808080;
-      font-size: 11px;
-      margin-bottom: 4px;
-    }
-
-    .log-person {
-      color: #D4AF37;
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-
-    .log-content {
-      color: #b0b0b0;
-      font-size: 12px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-    }
-
-    .log-empty {
-      color: #606060;
-      font-size: 13px;
-      text-align: center;
-      padding: 40px 0;
-    }
-
-    /* Node Hover Tooltip */
-    #node-tooltip {
-      position: fixed;
-      display: none;
-      background: rgba(20, 20, 28, .95);
-      border: 1px solid rgba(212, 175, 55, .35);
-      border-radius: 8px;
-      padding: 6px;
-      z-index: 500;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, .5);
-      gap: 4px;
-    }
-
-    .tooltip-btn {
-      display: block;
-      width: 100%;
-      background: rgba(212, 175, 55, .08);
-      border: 1px solid rgba(212, 175, 55, .2);
-      color: #D4AF37;
-      padding: 5px 14px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-family: 'Noto Serif SC', serif;
-      font-size: 11px;
-      white-space: nowrap;
-      transition: all .15s;
-      margin-bottom: 3px;
-    }
-
-    .tooltip-btn:last-child {
-      margin-bottom: 0;
-    }
-
-    .tooltip-btn:hover {
-      background: rgba(212, 175, 55, .2);
-      border-color: rgba(212, 175, 55, .5);
-    }
-
-    .tooltip-btn.danger {
-      color: #ff6b6b;
-      border-color: rgba(255, 107, 107, .2);
-      background: rgba(255, 107, 107, .06);
-    }
-
-    .tooltip-btn.danger:hover {
-      background: rgba(255, 107, 107, .15);
-      border-color: rgba(255, 107, 107, .4);
     }
 
     /* Add Node Dialog */
@@ -695,6 +601,9 @@
   <div id="control-panel">
     <h1>延陵世家<br>凉水埠吴氏家谱</h1>
     <div class="stats" id="stats-line">加载中…</div>
+    <button id="data-file-button" type="button">连接 JSON，启用直接保存</button>
+    <input id="data-file-input" type="file" accept="application/json,.json" hidden>
+    <div id="save-status"></div>
     <div class="btn-grid">
       <button class="ctrl-btn" id="btn-expand" title="展开全部">展开全部</button>
       <button class="ctrl-btn" id="btn-collapse" title="收起全部">收起全部</button>
@@ -710,10 +619,6 @@
       <input id="search-input" type="text" placeholder="搜索人名…" autocomplete="off">
       <div id="search-results"></div>
     </div>
-    <div class="ctrl-links">
-      <a id="update-log-link">📋 更新记录</a>
-      <a id="export-link">💾 导出数据</a>
-    </div>
   </div>
 
   <!-- Password Overlay -->
@@ -722,21 +627,6 @@
     <input id="pwd-input" type="password" placeholder="请输入访问密码">
     <button class="pwd-btn" id="pwd-btn">进 入</button>
     <div class="pwd-error" id="pwd-error"></div>
-  </div>
-
-  <!-- Update Log Panel -->
-  <div id="log-overlay">
-    <div id="log-panel" style="position:relative">
-      <span class="log-close" id="log-close">✕</span>
-      <h2>📋 更新记录</h2>
-      <div id="log-list"></div>
-    </div>
-  </div>
-
-  <!-- Node Hover Tooltip -->
-  <div id="node-tooltip">
-    <button class="tooltip-btn" id="tt-add">＋ 添加节点</button>
-    <button class="tooltip-btn danger" id="tt-delete">✕ 删除节点</button>
   </div>
 
   <!-- Add Node Dialog -->
@@ -763,9 +653,21 @@
     <div id="info-gen"></div>
     <div id="info-descendants"></div>
     <div id="info-desc"></div>
-    <button id="info-edit-btn">编辑</button>
-    <textarea id="info-textarea" placeholder="添加备注信息…"></textarea>
-    <button id="info-save-btn">保存</button>
+    <button id="info-edit-btn">编辑人物信息</button>
+    <div id="info-edit-fields">
+      <label for="info-name-input">姓名及配偶</label>
+      <input id="info-name-input" type="text">
+      <label for="info-gen-input">世代</label>
+      <input id="info-gen-input" type="text">
+      <label for="info-textarea">备注</label>
+      <textarea id="info-textarea" placeholder="添加备注信息…"></textarea>
+    </div>
+    <div id="info-edit-actions">
+      <button id="info-save-btn">保存全部修改</button>
+      <button id="info-cancel-btn">取消编辑</button>
+      <button id="info-add-child-btn">＋ 添加子节点</button>
+      <button id="info-delete-btn">✕ 删除当前节点</button>
+    </div>
   </div>
 
   <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -790,116 +692,154 @@
       input.focus();
     })();
 
-    // ====== Update Log ======
-    function getEditLog() {
-      try { return JSON.parse(localStorage.getItem('ft_edit_log') || '[]'); } catch (e) { return []; }
-    }
-    function addEditLog(personName, personId, content) {
-      const log = getEditLog();
-      log.unshift({
-        time: new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        person: personName,
-        personId: personId,
-        content: content
-      });
-      localStorage.setItem('ft_edit_log', JSON.stringify(log));
-    }
-    function showEditLog() {
-      const overlay = document.getElementById('log-overlay');
-      const list = document.getElementById('log-list');
-      const log = getEditLog();
-      if (log.length === 0) {
-        list.innerHTML = '<div class="log-empty">暂无更新记录</div>';
-      } else {
-        list.innerHTML = log.map(entry =>
-          '<div class="log-entry">' +
-          '<div class="log-time">' + entry.time + '</div>' +
-          '<div class="log-person">👤 ' + entry.person + '</div>' +
-          '<div class="log-content">' + (entry.content || '(清空备注)').replace(/</g, '&lt;') + '</div>' +
-          '</div>'
-        ).join('');
-      }
-      overlay.style.display = 'flex';
-    }
-    document.getElementById('update-log-link').addEventListener('click', showEditLog);
-
-    // ====== Export Data (merge edits into JSON data file) ======
-    document.getElementById('export-link').addEventListener('click', () => {
-      const pwd = prompt('请输入编辑密码以导出数据：');
-      if (pwd !== 'Lsb@1775') { alert('密码错误'); return; }
-      exportDataJSON();
-    });
-
-    function exportDataJSON() {
-      // Deep clone and merge all edits into the tree data
-      function cloneAndMerge(data) {
-        const node = {
-          name: data.name,
-          id: data.id,
-          generation: data.generation || '',
-          dc: data.dc || 0,
-          depth: data.depth || 0
-        };
-        // Merge localStorage notes
-        const savedNote = localStorage.getItem('ft_note_' + (data.id || data.name));
-        if (savedNote) node.note = savedNote;
-        else if (data.note) node.note = data.note;
-        // Recursively clone children
-        const kids = data._children_all || data.children || [];
-        if (kids.length > 0) {
-          node.children = kids.map(c => cloneAndMerge(c));
-        } else {
-          node.children = [];
-        }
-        return node;
-      }
-      const mergedData = cloneAndMerge(DATA);
-      // Re-count descendants
-      function recount(node) {
-        if (!node.children || node.children.length === 0) { node.dc = 0; return 0; }
-        let total = node.children.length;
-        node.children.forEach(c => { total += recount(c); });
-        node.dc = total;
-        return total;
-      }
-      recount(mergedData);
-      // Generate filename with date
-      const now = new Date();
-      const ymd = now.getFullYear() +
-        String(now.getMonth() + 1).padStart(2, '0') +
-        String(now.getDate()).padStart(2, '0');
-      const filename = '延陵世家——凉水埠吴氏家谱-db_' + ymd + '.json';
-      // Download JSON
-      const json = JSON.stringify(mergedData, null, 2);
-      const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      alert('✅ 已导出: ' + filename + '\n\n所有编辑记录已合并到数据文件中。\n请将此文件替换服务器上的旧数据文件。');
-    }
-    document.getElementById('log-close').addEventListener('click', () => {
-      document.getElementById('log-overlay').style.display = 'none';
-    });
-    document.getElementById('log-overlay').addEventListener('click', (e) => {
-      if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
-    });
-
     // ====== Data File Configuration ======
     const DATA_FILE = 'family_data.json';
+    let DATA = null;
+    let dataFileHandle = null;
+    let appInitialized = false;
+    const dataFileButton = document.getElementById('data-file-button');
+    const dataFileInput = document.getElementById('data-file-input');
+    const saveStatus = document.getElementById('save-status');
 
-    // Load data from external file
-    fetch(DATA_FILE)
-      .then(r => r.json())
-      .then(DATA => initApp(DATA))
-      .catch(e => {
-        console.error('Failed to load ' + DATA_FILE + ':', e);
-        document.getElementById('stats-line').textContent = '数据加载失败，请确保 ' + DATA_FILE + ' 在同一目录';
-      });
+    function showDataFileButton(message) {
+      if (message) saveStatus.textContent = message;
+      dataFileButton.style.display = 'block';
+    }
 
-    function initApp(DATA) {
+    function setConnectedState(fileName) {
+      dataFileButton.textContent = '✓ 已连接：' + fileName;
+      dataFileButton.classList.add('connected');
+      saveStatus.textContent = '页面编辑将自动写入此 JSON 文件';
+    }
+
+    function loadSelectedFileReadOnly(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          initApp(JSON.parse(reader.result));
+          dataFileButton.textContent = '当前浏览器不支持直接写入 JSON';
+          saveStatus.textContent = '请使用最新版 Chrome 或 Edge 打开页面';
+        } catch (e) {
+          console.error('Invalid JSON data file:', e);
+          document.getElementById('stats-line').textContent = 'JSON 文件格式无效，请重新选择';
+        }
+      };
+      reader.onerror = () => {
+        document.getElementById('stats-line').textContent = '无法读取 JSON 文件，请重新选择';
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    async function connectEditableDataFile() {
+      if (dataFileHandle) return true;
+      if (!window.showOpenFilePicker) {
+        dataFileInput.click();
+        return false;
+      }
+      try {
+        const handles = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{
+            description: '家谱 JSON 数据',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+        const handle = handles[0];
+        const file = await handle.getFile();
+        const selectedData = JSON.parse(await file.text());
+        if (DATA && selectedData.id !== DATA.id) {
+          alert('所选 JSON 不是当前家谱数据文件，请重新选择。');
+          return false;
+        }
+        if (DATA) {
+          const currentContent = JSON.stringify(buildPersistableTree(DATA));
+          const selectedContent = JSON.stringify(buildPersistableTree(selectedData));
+          if (currentContent !== selectedContent) {
+            alert('所选 JSON 与页面当前加载的数据不一致。为防止覆盖，请选择与页面对应的 JSON 文件。');
+            return false;
+          }
+        }
+        dataFileHandle = handle;
+        if (!appInitialized) initApp(selectedData);
+        setConnectedState(file.name);
+        return true;
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          console.error('Failed to open writable JSON file:', e);
+          saveStatus.textContent = 'JSON 文件连接失败，请重试';
+        }
+        return false;
+      }
+    }
+
+    function buildPersistableTree(data, depth = 0) {
+      const children = data._children_all || data.children || [];
+      const node = { name: data.name, id: data.id };
+      if (data.generation) node.generation = data.generation;
+      if (data.note) node.note = data.note;
+      const savedChildren = children.map(child => buildPersistableTree(child, depth + 1));
+      if (savedChildren.length > 0) node.children = savedChildren;
+      node.dc = savedChildren.reduce((total, child) => total + 1 + child.dc, 0);
+      node.depth = depth;
+      data.dc = node.dc;
+      data.depth = depth;
+      return node;
+    }
+
+    async function saveDataDirectly() {
+      if (!dataFileHandle || !DATA) {
+        alert('请先点击“连接 JSON，启用直接保存”，并选择家谱 JSON 文件。');
+        return false;
+      }
+      saveStatus.textContent = '正在保存…';
+      try {
+        const output = buildPersistableTree(DATA);
+        const writable = await dataFileHandle.createWritable();
+        await writable.write(JSON.stringify(output, null, 2));
+        await writable.close();
+        saveStatus.textContent = '✓ 已直接保存到 JSON 文件';
+        return true;
+      } catch (e) {
+        console.error('Failed to save JSON data:', e);
+        saveStatus.textContent = '保存失败，请重新连接 JSON 文件';
+        alert('无法写入 JSON 文件，请检查文件权限后重试。');
+        return false;
+      }
+    }
+
+    function requireWritableFile() {
+      if (dataFileHandle) return true;
+      alert('编辑前请先点击“连接 JSON，启用直接保存”，并选择家谱 JSON 文件。');
+      return false;
+    }
+
+    dataFileButton.addEventListener('click', connectEditableDataFile);
+    dataFileInput.addEventListener('change', () => loadSelectedFileReadOnly(dataFileInput.files[0]));
+
+    // HTTP/GitHub Pages 环境可只读浏览；直接编辑必须先授权写入本地 JSON 文件。
+    if (location.protocol === 'file:') {
+      document.getElementById('stats-line').textContent = '请先连接家谱 JSON 文件';
+      showDataFileButton('选择文件一次，之后每次编辑都会直接保存');
+    } else {
+      fetch(encodeURI(DATA_FILE))
+        .then(r => {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(initApp)
+        .catch(e => {
+          console.error('Failed to load ' + DATA_FILE + ':', e);
+          document.getElementById('stats-line').textContent = '数据加载失败：' + DATA_FILE;
+          showDataFileButton('请选择家谱 JSON 文件');
+        });
+    }
+
+    function initApp(loadedData) {
+      if (appInitialized) return;
+      appInitialized = true;
+      DATA = loadedData;
+      showDataFileButton();
       // ====== Flatten & Statistics ======
       const allNodes = [];
       const genSet = new Set();
@@ -1094,13 +1034,7 @@
             return cls;
           })
           .attr('transform', `translate(${sx},${sy})`)
-          .style('opacity', 0)
-          .on('mouseenter', function (event, d) {
-            showNodeTooltip(event, d, this);
-          })
-          .on('mouseleave', function (event) {
-            hideNodeTooltipDelay();
-          });
+          .style('opacity', 0);
 
         // Circle
         nodeEnter.append('circle')
@@ -1180,9 +1114,19 @@
             return '#D4AF37';
           });
 
-        // Update label color for search
+        // Update labels after edits and update search color
         nodeUpdate.select('.node-label')
+          .each(function (d) {
+            wrapText(d3.select(this), d.data.name || '', NODE_WIDTH + 10);
+          })
           .style('fill', d => (searchHighlighted && searchHighlighted === d.data.id) ? '#FF8C00' : '#D4AF37');
+
+        nodeUpdate.select('.node-gen-label')
+          .attr('y', d => {
+            const nameLines = getTextLines(d.data.name || '', NODE_WIDTH + 10);
+            return CIRCLE_R + 16 + nameLines.length * 14 + 4;
+          })
+          .text(d => formatGen(d.data.generation || ''));
 
         setTimeout(updateMinimap, 500);
         return hierarchy;
@@ -1328,20 +1272,28 @@
         currentSelected = d;
         const panel = document.getElementById('info-panel');
         panel.style.display = 'block';
-        document.getElementById('info-name').textContent = d.data.name || '';
-        document.getElementById('info-gen').textContent = d.data.generation || '';
+        refreshInfoPanel();
+        setInfoEditMode(false);
+      }
 
-        const dc = d.data.dc !== undefined ? d.data.dc : countDescendants(d.data);
-        document.getElementById('info-descendants').textContent = `此人以下收录 ${dc} 人`;
+      function refreshInfoPanel() {
+        if (!currentSelected) return;
+        const data = currentSelected.data;
+        document.getElementById('info-name').textContent = data.name || '';
+        document.getElementById('info-gen').textContent = data.generation || '未填写世代';
+        document.getElementById('info-descendants').textContent = `此人以下收录 ${countDescendants(data)} 人`;
+        document.getElementById('info-desc').textContent = data.note || '暂无备注信息';
+        document.getElementById('info-name-input').value = data.name || '';
+        document.getElementById('info-gen-input').value = data.generation || '';
+        document.getElementById('info-textarea').value = data.note || '';
+        document.getElementById('info-delete-btn').style.visibility = data === DATA ? 'hidden' : 'visible';
+      }
 
-        // Load saved notes, fall back to data.note (from Feishu), then to empty
-        const savedNote = localStorage.getItem('ft_note_' + (d.data.id || d.data.name)) || '';
-        const dataNote = d.data.note || '';
-        const displayNote = savedNote || dataNote;
-        document.getElementById('info-desc').textContent = displayNote || '暂无备注信息';
-        document.getElementById('info-textarea').value = displayNote;
-        document.getElementById('info-textarea').style.display = 'none';
-        document.getElementById('info-save-btn').style.display = 'none';
+      function setInfoEditMode(enabled) {
+        document.getElementById('info-edit-fields').style.display = enabled ? 'block' : 'none';
+        document.getElementById('info-edit-actions').style.display = enabled ? 'grid' : 'none';
+        document.getElementById('info-edit-btn').style.display = enabled ? 'none' : 'inline-block';
+        if (!enabled && currentSelected) refreshInfoPanel();
       }
 
       function countDescendants(data) {
@@ -1353,11 +1305,13 @@
 
       document.getElementById('info-close').addEventListener('click', () => {
         document.getElementById('info-panel').style.display = 'none';
+        setInfoEditMode(false);
         currentSelected = null;
       });
 
       let editUnlocked = false;
       document.getElementById('info-edit-btn').addEventListener('click', () => {
+        if (!requireWritableFile()) return;
         if (!editUnlocked) {
           const pwd = prompt('请输入编辑密码：');
           if (pwd !== 'Lsb@1775') {
@@ -1366,22 +1320,36 @@
           }
           editUnlocked = true;
         }
-        const ta = document.getElementById('info-textarea');
-        const sb = document.getElementById('info-save-btn');
-        ta.style.display = ta.style.display === 'none' ? 'block' : 'none';
-        sb.style.display = sb.style.display === 'none' ? 'block' : 'none';
+        refreshInfoPanel();
+        setInfoEditMode(true);
       });
 
-      document.getElementById('info-save-btn').addEventListener('click', () => {
+      document.getElementById('info-save-btn').addEventListener('click', async () => {
         if (!currentSelected) return;
-        const text = document.getElementById('info-textarea').value;
-        const personName = currentSelected.data.name || '未知';
-        const personId = currentSelected.data.id || currentSelected.data.name;
-        localStorage.setItem('ft_note_' + personId, text);
-        addEditLog(personName, personId, text);
-        document.getElementById('info-desc').textContent = text || '暂无备注信息';
-        document.getElementById('info-textarea').style.display = 'none';
-        document.getElementById('info-save-btn').style.display = 'none';
+        const name = document.getElementById('info-name-input').value.trim();
+        if (!name) { alert('姓名不能为空'); return; }
+        const generation = document.getElementById('info-gen-input').value.trim();
+        const note = document.getElementById('info-textarea').value.trim();
+        const previous = {
+          name: currentSelected.data.name || '',
+          generation: currentSelected.data.generation || '',
+          note: currentSelected.data.note || ''
+        };
+        currentSelected.data.name = name;
+        currentSelected.data.generation = generation;
+        currentSelected.data.note = note;
+        if (!await saveDataDirectly()) {
+          Object.assign(currentSelected.data, previous);
+          return;
+        }
+        render(null);
+        updateStats();
+        refreshInfoPanel();
+        setInfoEditMode(false);
+      });
+
+      document.getElementById('info-cancel-btn').addEventListener('click', () => {
+        setInfoEditMode(false);
       });
 
       // ====== Search ======
@@ -1566,114 +1534,6 @@
         svg.call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(transform.k));
       }
 
-      // ====== Node Hover Tooltip ======
-      let tooltipNode = null;
-      let tooltipTimer = null;
-      let tooltipShowTimer = null;
-      let nodeEditUnlocked = false;
-      const tooltip = document.getElementById('node-tooltip');
-
-      function showNodeTooltip(event, d, el) {
-        clearTimeout(tooltipTimer);
-        clearTimeout(tooltipShowTimer);
-        // Delay 3 seconds before showing
-        tooltipShowTimer = setTimeout(() => {
-          tooltipNode = d;
-          const svgEl = svg.node();
-          const pt = svgEl.createSVGPoint();
-          pt.x = d._x;
-          pt.y = d._y;
-          const ctm = g.node().getScreenCTM();
-          const screenPt = pt.matrixTransform(ctm);
-          tooltip.style.display = 'block';
-          tooltip.style.left = (screenPt.x + 15) + 'px';
-          tooltip.style.top = (screenPt.y - 30) + 'px';
-        }, 3000);
-      }
-
-      function hideNodeTooltipDelay() {
-        clearTimeout(tooltipShowTimer);
-        tooltipTimer = setTimeout(() => {
-          tooltip.style.display = 'none';
-          tooltipNode = null;
-        }, 300);
-      }
-
-      // Keep tooltip visible when hovering over it
-      tooltip.addEventListener('mouseenter', () => clearTimeout(tooltipTimer));
-      tooltip.addEventListener('mouseleave', () => hideNodeTooltipDelay());
-
-      function checkNodeEditPwd() {
-        if (nodeEditUnlocked) return true;
-        const pwd = prompt('请输入节点编辑密码：');
-        if (pwd === 'Lsb@1775') {
-          nodeEditUnlocked = true;
-          return true;
-        }
-        alert('密码错误');
-        return false;
-      }
-
-      // ====== Load / Save Tree Modifications ======
-      function getTreeMods() {
-        try { return JSON.parse(localStorage.getItem('ft_tree_mods') || '{"added":[],"deleted":[]}'); }
-        catch (e) { return { added: [], deleted: [] }; }
-      }
-      function saveTreeMods(mods) {
-        localStorage.setItem('ft_tree_mods', JSON.stringify(mods));
-      }
-      function applyTreeMods() {
-        const mods = getTreeMods();
-        // Apply deletions
-        mods.deleted.forEach(del => {
-          const parent = findDataById(DATA, del.parentId);
-          if (parent && parent._children_all) {
-            parent._children_all = parent._children_all.filter(c => c.id !== del.nodeId);
-            if (parent._children_all.length === 0) parent._children_all = null;
-            if (parent._children_visible) {
-              parent._children_visible = parent._children_all;
-            }
-          }
-        });
-        // Apply additions
-        mods.added.forEach(add => {
-          const parent = findDataById(DATA, add.parentId);
-          if (parent) {
-            // Check if already added (avoid duplicates on reload)
-            const existing = parent._children_all && parent._children_all.find(c => c.id === add.node.id);
-            if (!existing) {
-              if (!parent._children_all) parent._children_all = [];
-              const newNode = {
-                name: add.node.name,
-                id: add.node.id,
-                generation: add.node.generation || '',
-                note: add.node.note || '',
-                children: [],
-                _children_all: null,
-                _children_visible: null,
-                _expanded: false,
-                dc: 0,
-                depth: (parent.depth || 0) + 1
-              };
-              parent._children_all.push(newNode);
-              if (parent._expanded) {
-                parent._children_visible = parent._children_all;
-              }
-            }
-          }
-        });
-      }
-
-      function findDataById(data, id) {
-        if (data.id === id) return data;
-        const children = data._children_all || data.children || [];
-        for (const c of children) {
-          const found = findDataById(c, id);
-          if (found) return found;
-        }
-        return null;
-      }
-
       function findParentData(root, targetId) {
         const children = root._children_all || root.children || [];
         for (const c of children) {
@@ -1684,15 +1544,10 @@
         return null;
       }
 
-      // Apply saved mods on load
-      applyTreeMods();
-
       // ====== Add Node ======
-      document.getElementById('tt-add').addEventListener('click', () => {
-        if (!checkNodeEditPwd()) return;
-        if (!tooltipNode) return;
-        tooltip.style.display = 'none';
-        const parentData = tooltipNode.data;
+      document.getElementById('info-add-child-btn').addEventListener('click', () => {
+        if (!currentSelected || !requireWritableFile()) return;
+        const parentData = currentSelected.data;
         document.getElementById('add-dialog-title').textContent = '为「' + (parentData.name || '') + '」添加子节点';
         document.getElementById('add-name').value = '';
         document.getElementById('add-gen').value = '';
@@ -1703,7 +1558,7 @@
         setTimeout(() => document.getElementById('add-name').focus(), 100);
       });
 
-      document.getElementById('add-confirm').addEventListener('click', () => {
+      document.getElementById('add-confirm').addEventListener('click', async () => {
         const overlay = document.getElementById('add-node-overlay');
         const parentData = overlay._parentData;
         if (!parentData) return;
@@ -1728,17 +1583,21 @@
         parentData._children_all.push(newNode);
         parentData._children_visible = parentData._children_all;
         parentData._expanded = true;
-        // Persist
-        const mods = getTreeMods();
-        mods.added.push({ parentId: parentData.id, node: { name, id: newId, generation: gen, note: note } });
-        saveTreeMods(mods);
-        // Log
-        addEditLog(parentData.name + ' → 添加子节点', parentData.id, '新增：' + name + (gen ? '（' + gen + '）' : ''));
+        if (!await saveDataDirectly()) {
+          parentData._children_all = parentData._children_all.filter(child => child.id !== newId);
+          if (parentData._children_all.length === 0) {
+            parentData._children_all = null;
+            parentData._children_visible = null;
+            parentData._expanded = false;
+          }
+          return;
+        }
         // Re-render
         render(null);
         overlay.style.display = 'none';
         // Update stats
         updateStats();
+        refreshInfoPanel();
       });
 
       document.getElementById('add-cancel').addEventListener('click', () => {
@@ -1750,11 +1609,9 @@
       });
 
       // ====== Delete Node ======
-      document.getElementById('tt-delete').addEventListener('click', () => {
-        if (!checkNodeEditPwd()) return;
-        if (!tooltipNode) return;
-        tooltip.style.display = 'none';
-        const nodeData = tooltipNode.data;
+      document.getElementById('info-delete-btn').addEventListener('click', async () => {
+        if (!currentSelected || !requireWritableFile()) return;
+        const nodeData = currentSelected.data;
         if (nodeData === DATA) { alert('不能删除根节点'); return; }
         const childCount = nodeData._children_all ? nodeData._children_all.length : 0;
         const msg = childCount > 0
@@ -1763,6 +1620,7 @@
         if (!confirm(msg)) return;
         // Find parent and remove
         const parent = findParentData(DATA, nodeData.id);
+        const originalChildren = parent && parent._children_all ? [...parent._children_all] : null;
         if (parent && parent._children_all) {
           parent._children_all = parent._children_all.filter(c => c.id !== nodeData.id);
           if (parent._children_all.length === 0) {
@@ -1773,15 +1631,17 @@
             parent._children_visible = parent._children_all;
           }
         }
-        // Persist
-        const mods = getTreeMods();
-        mods.deleted.push({ parentId: parent ? parent.id : null, nodeId: nodeData.id, nodeName: nodeData.name });
-        saveTreeMods(mods);
-        // Log
-        addEditLog('删除节点', nodeData.id, '删除：' + nodeData.name + (nodeData.generation ? '（' + nodeData.generation + '）' : ''));
+        if (!await saveDataDirectly()) {
+          if (parent && originalChildren) {
+            parent._children_all = originalChildren;
+            if (parent._expanded) parent._children_visible = parent._children_all;
+          }
+          return;
+        }
         // Re-render
         render(null);
         document.getElementById('info-panel').style.display = 'none';
+        currentSelected = null;
         updateStats();
       });
 
