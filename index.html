@@ -3,12 +3,10 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>延陵世家——凉水埠吴氏家谱</title>
   <meta name="description" content="凉水埠吴氏家族家谱互动可视化">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
-
     * {
       margin: 0;
       padding: 0;
@@ -18,7 +16,7 @@
     body {
       background: linear-gradient(180deg, #1a1a1f 0%, #0d0d11 100%);
       color: #c0c0c0;
-      font-family: 'Noto Serif SC', serif;
+      font-family: 'Noto Serif SC', 'Songti SC', 'Noto Serif CJK SC', SimSun, serif;
       overflow: hidden;
       width: 100vw;
       height: 100vh;
@@ -273,15 +271,21 @@
     }
 
     .search-item {
+      display: block;
+      width: 100%;
       padding: 7px 10px;
       cursor: pointer;
       font-size: 12px;
       color: #b0b0b0;
+      text-align: left;
+      font-family: inherit;
+      background: transparent;
+      border: 0;
       border-bottom: 1px solid rgba(60, 60, 60, .3);
       transition: background .15s
     }
 
-    .search-item:hover {
+    .search-item:hover, .search-item:focus-visible {
       background: rgba(212, 175, 55, .1);
       color: #D4AF37
     }
@@ -617,6 +621,112 @@
       border-color: rgba(100, 100, 100, .5);
       color: #a0a0a0;
     }
+
+    #info-close {
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    @media (max-width: 640px), (max-height: 480px) and (pointer: coarse) {
+      body {
+        height: 100dvh;
+        overscroll-behavior: none;
+        -webkit-text-size-adjust: 100%;
+        font-family: "Songti SC", "Noto Serif CJK SC", SimSun, serif;
+      }
+
+      #tree-canvas svg { touch-action: none; }
+
+      #control-panel {
+        top: max(8px, env(safe-area-inset-top));
+        left: max(8px, env(safe-area-inset-left));
+        right: max(8px, env(safe-area-inset-right));
+        bottom: auto;
+        width: auto;
+        padding: 8px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 6px;
+        background: #17171e;
+        backdrop-filter: none;
+      }
+
+      #control-panel h1 { margin: 0; font-size: 16px; }
+      #control-panel h1 br, #minimap-container, #save-status:empty { display: none; }
+      #control-panel .stats { margin: 0; text-align: right; }
+      #data-file-button, #save-status, .btn-grid, #search-wrap { grid-column: 1 / -1; margin: 0; }
+      #search-wrap { order: 1; }
+      .btn-grid { order: 2; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      #save-status { order: 3; }
+      .ctrl-btn, #search-input, #data-file-button { min-height: 44px; }
+      .ctrl-btn { font-size: 13px; }
+      #search-input { font-size: 16px; }
+
+      #search-results {
+        top: calc(100% + 4px);
+        bottom: auto;
+        max-height: min(280px, 46vh);
+        max-height: max(48px, min(280px, calc(var(--tree-visible-height, 100dvh) - 100px)));
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        background: #17171e;
+      }
+
+      .search-item { min-height: 44px; padding: 11px 12px; font-size: 15px; }
+      .search-item .gen { font-size: 12px; }
+
+      #info-panel {
+        left: max(8px, env(safe-area-inset-left));
+        right: max(8px, env(safe-area-inset-right));
+        bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--tree-keyboard-inset, 0px));
+        width: auto;
+        max-height: 48vh;
+        max-height: min(48dvh, max(130px, calc(var(--tree-visible-height, 100dvh) - 140px)));
+        padding: 12px 14px;
+        z-index: 110;
+        background: #17171e;
+        backdrop-filter: none;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        scroll-padding: 8px;
+      }
+
+      #info-panel.is-editing {
+        max-height: 72vh;
+        max-height: min(72dvh, max(130px, calc(var(--tree-visible-height, 100dvh) - 20px)));
+      }
+
+      #info-name { font-size: 18px; }
+      #info-desc { margin-bottom: 12px; font-size: 15px; color: #c9c5ba; line-height: 1.65; }
+      #info-close {
+        position: sticky;
+        z-index: 1;
+        top: 0;
+        float: right;
+        width: 44px;
+        height: 44px;
+        margin: -4px -4px 4px 8px;
+        color: #c0c0c0;
+        background: #23232b;
+        border-radius: 8px;
+      }
+
+      #info-edit-btn, #info-edit-actions button, .dialog-btn, #pwd-overlay .pwd-btn { min-height: 44px; }
+      #info-name-input, #info-gen-input, #info-textarea, #pwd-overlay input,
+      #add-node-dialog input, #add-node-dialog textarea, #github-token { font-size: 16px; }
+      #pwd-overlay { padding: 16px; }
+      #pwd-overlay h2 { text-align: center; font-size: 19px; }
+      #pwd-overlay input { max-width: 100%; }
+      #add-node-overlay { bottom: var(--tree-keyboard-inset, 0px); padding: 12px; }
+      #add-node-dialog, #github-edit-dialog {
+        max-width: 100%;
+        max-height: calc(var(--tree-visible-height, 100dvh) - 24px);
+        overflow-y: auto;
+      }
+      #github-edit-dialog { max-width: calc(100% - 24px); }
+    }
   </style>
 </head>
 
@@ -625,7 +735,7 @@
 
   <!-- Control Panel -->
   <div id="control-panel">
-    <h1>延陵世家<br>凉水埠吴氏家谱</h1>
+    <h1>延陵世家<br> 凉水埠吴氏家谱</h1>
     <div class="stats" id="stats-line">加载中…</div>
     <button id="data-file-button" type="button">连接 JSON，启用直接保存</button>
     <input id="data-file-input" type="file" accept="application/json,.json" hidden>
@@ -642,7 +752,7 @@
     </div>
     <div id="search-wrap">
       <span id="search-icon">🔍</span>
-      <input id="search-input" type="text" placeholder="搜索人名…" autocomplete="off">
+      <input id="search-input" type="search" placeholder="搜索人名或拼音…" aria-label="搜索人名或拼音" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
       <div id="search-results"></div>
     </div>
   </div>
@@ -675,7 +785,7 @@
 
   <!-- Info Panel -->
   <div id="info-panel">
-    <span id="info-close">✕</span>
+    <button id="info-close" type="button" aria-label="关闭人物信息">✕</button>
     <div id="info-name"></div>
     <div id="info-gen"></div>
     <div id="info-descendants"></div>
@@ -710,7 +820,8 @@
     </form>
   </dialog>
 
-  <script src="https://d3js.org/d3.v7.min.js" integrity="sha384-LxfWGZyh6PaLjBRPf7NWiEYs9Mn0UQ6ZmqbLLZhxlOBBNWF2a2K0Pfc5efkrNnhQ" crossorigin="anonymous"></script>
+  <script src="vendor/d3-7.9.2/dist/d3.min.js"></script>
+  <script defer src="vendor/pinyin-pro-3.29.5/dist/index.js"></script>
   <script>
     // ====== Password Gate ======
     (function () {
@@ -720,6 +831,7 @@
       const err = document.getElementById('pwd-error');
       function tryLogin() {
         if (input.value === 'wujiachaguan') {
+          input.blur();
           overlay.style.display = 'none';
         } else {
           err.textContent = '密码错误，请重试';
@@ -729,8 +841,23 @@
       }
       btn.addEventListener('click', tryLogin);
       input.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
-      input.focus();
+      if (!window.matchMedia('(pointer: coarse)').matches) input.focus();
     })();
+
+    const compactTreeView = window.matchMedia('(max-width: 640px), (max-height: 480px) and (pointer: coarse)');
+    const visualView = window.visualViewport;
+    if (visualView) {
+      const updateVisibleHeight = () => {
+        if (!compactTreeView.matches || visualView.scale !== 1) return;
+        const styles = document.documentElement.style;
+        styles.setProperty('--tree-visible-height', visualView.height + 'px');
+        styles.setProperty('--tree-keyboard-inset', Math.max(0,
+          document.documentElement.clientHeight - visualView.height - visualView.offsetTop) + 'px');
+      };
+      visualView.addEventListener('resize', updateVisibleHeight);
+      visualView.addEventListener('scroll', updateVisibleHeight);
+      updateVisibleHeight();
+    }
 
     // ====== Data File Configuration ======
     const DATA_FILE = '延陵世家——凉水埠吴氏家谱-db_20260808.json';
@@ -747,6 +874,17 @@
     const dataFileButton = document.getElementById('data-file-button');
     const dataFileInput = document.getElementById('data-file-input');
     const saveStatus = document.getElementById('save-status');
+
+    function showLoadRetry(message) {
+      const stats = document.getElementById('stats-line');
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'ctrl-btn';
+      retry.style.paddingInline = '8px';
+      retry.textContent = '重试';
+      retry.addEventListener('click', () => location.reload());
+      stats.replaceChildren(message + ' ', retry);
+    }
 
     function showDataFileButton(message) {
       if (message && !IS_GITHUB_PAGES) saveStatus.textContent = message;
@@ -970,13 +1108,21 @@
         })
         .catch(e => {
           console.error('Failed to load ' + DATA_FILE + ':', e);
-          document.getElementById('stats-line').textContent = '数据加载失败：' + DATA_FILE;
-          showDataFileButton('请选择家谱 JSON 文件');
+          if (IS_GITHUB_PAGES) {
+            showLoadRetry('家谱数据暂未加载');
+          } else {
+            document.getElementById('stats-line').textContent = '数据加载失败：' + DATA_FILE;
+            showDataFileButton('请选择家谱 JSON 文件');
+          }
         });
     }
 
     function initApp(loadedData) {
       if (appInitialized) return;
+      if (!window.d3) {
+        showLoadRetry('家谱图暂未加载');
+        return;
+      }
       appInitialized = true;
       DATA = loadedData;
       showDataFileButton();
@@ -995,8 +1141,8 @@
 
       // ====== D3 Setup ======
       const container = document.getElementById('tree-canvas');
-      const width = container.clientWidth;
-      const height = container.clientHeight;
+      let width = container.clientWidth;
+      let height = container.clientHeight;
 
       const svg = d3.select('#tree-canvas').append('svg')
         .attr('width', width).attr('height', height);
@@ -1018,6 +1164,20 @@
           updateMinimap();
         });
       svg.call(zoom);
+      function resizeTree() {
+        const nextWidth = container.clientWidth;
+        const nextHeight = container.clientHeight;
+        if (!nextWidth || !nextHeight || (width === nextWidth && height === nextHeight)) return;
+        const shiftX = (nextWidth - width) / 2;
+        const shiftY = (nextHeight - height) / 2;
+        const { x, y, k } = d3.zoomTransform(svg.node());
+        width = nextWidth;
+        height = nextHeight;
+        svg.interrupt().attr('width', width).attr('height', height)
+          .call(zoom.transform, d3.zoomIdentity.translate(x + shiftX, y + shiftY).scale(k));
+      }
+      window.addEventListener('resize', resizeTree);
+      if ('ResizeObserver' in window) new ResizeObserver(resizeTree).observe(container);
 
       // ====== Tree Hierarchy ======
       const root = d3.hierarchy(DATA, d => d._children_visible);
@@ -1333,10 +1493,10 @@
         const hierarchy = render(d);
         // Center on clicked node
         const targetNode = findNodeInHierarchy(hierarchy, d.data.id || d.data.name);
+        showInfoPanel(d);
         if (targetNode) {
           centerOnNode(targetNode._x, targetNode._y);
         }
-        showInfoPanel(d);
       }
 
       function collapseRecursive(data) {
@@ -1358,10 +1518,19 @@
       }
 
       // ====== Center view on a position ======
+      function treeViewport() {
+        if (!compactTreeView.matches) return { top: 0, bottom: height };
+        const top = document.getElementById('control-panel').getBoundingClientRect().bottom + 8;
+        const details = document.getElementById('info-panel');
+        const bottom = details.offsetHeight ? details.getBoundingClientRect().top - 8 : height;
+        return bottom > top ? { top, bottom } : { top: 0, bottom: height };
+      }
+
       function centerOnNode(x, y, scale) {
         const s = scale || d3.zoomTransform(svg.node()).k;
         const tx = width / 2 - x * s;
-        const ty = height / 2 - y * s;
+        const { top, bottom } = treeViewport();
+        const ty = (top + bottom) / 2 - y * s;
         svg.transition().duration(600)
           .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(s));
       }
@@ -1381,7 +1550,8 @@
         const treeW = maxX - minX + NODE_WIDTH * 2;
         const treeH = maxY - minY + ROW_HEIGHT;
         const scaleX = (width - 80) / treeW;
-        const scaleY = (height - 80) / treeH;
+        const { top, bottom } = treeViewport();
+        const scaleY = Math.max(40, bottom - top - 80) / treeH;
         const s = Math.min(scaleX, scaleY, 1.5) * (zoomMultiplier || 1);
         const cx = (minX + maxX) / 2;
         const cy = (minY + maxY) / 2;
@@ -1469,6 +1639,7 @@
         panel.style.display = 'block';
         refreshInfoPanel();
         setInfoEditMode(false);
+        panel.scrollTop = 0;
       }
 
       function refreshInfoPanel() {
@@ -1486,6 +1657,7 @@
       }
 
       function setInfoEditMode(enabled) {
+        document.getElementById('info-panel').classList.toggle('is-editing', enabled);
         document.getElementById('info-edit-fields').style.display = enabled ? 'block' : 'none';
         document.getElementById('info-edit-actions').style.display = enabled ? 'grid' : 'none';
         document.getElementById('info-edit-btn').style.display = enabled ? 'none' : 'inline-block';
@@ -1555,44 +1727,108 @@
       // ====== Search ======
       const searchInput = document.getElementById('search-input');
       const searchResults = document.getElementById('search-results');
+      const officialNameAliases = [
+        ['吴国炳', '吳國柄', '吴国柄'],
+        ['谈玉茹', '谈玉如', '談玉茹', '談玉如']
+      ];
+      const nameIndex = new WeakMap();
+      let composingName = false;
 
-      searchInput.addEventListener('input', () => {
-        const q = searchInput.value.trim();
+      function compactPinyin(value) {
+        return value.toLowerCase().normalize('NFKD')
+          .replace(/u\u0308|u:/g, 'v').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[\s'’·._-]+/g, '').replace(/[1-5]/g, '');
+      }
+
+      function indexedNames(data) {
+        const cached = nameIndex.get(data);
+        if (cached && cached.name === data.name) return cached;
+        const label = (data.name || '').normalize('NFKC').toLowerCase();
+        const names = label.split(/[，,、；;：:（）()／/]+/)
+          .map(part => part.trim().replace(/^(?:[一二三大]房\s*)?(?:[长次幼独一二三四五六七八九十]?(?:子|女)|妻|婿|配偶|继妻|继室|妾)\s*/, ''))
+          .filter(Boolean);
+        for (const aliases of officialNameAliases) {
+          if (aliases.some(alias => label.includes(alias))) names.push(...aliases);
+        }
+        const entry = { name: data.name, label, names };
+        nameIndex.set(data, entry);
+        return entry;
+      }
+
+      function matchName(data, query, romanized) {
+        const entry = indexedNames(data);
+        if (entry.names.includes(query)) return 0;
+        if (entry.label.includes(query) || entry.names.some(name => name.includes(query))) return 2;
+        if (!romanized || !window.pinyinPro) return Infinity;
+        if (!entry.pinyin) {
+          entry.pinyin = entry.names.map(name => {
+            const syllables = window.pinyinPro.pinyin(name, {
+              mode: 'surname', toneType: 'none', type: 'array'
+            }).map(compactPinyin);
+            return [syllables.join(''), syllables.map(s => s.charAt(0)).join('')];
+          });
+        }
+        if (entry.pinyin.some(([full]) => full === romanized)) return 0;
+        if (entry.pinyin.some(([, initials]) => initials === romanized)) return 1;
+        if (romanized.length >= 2 && entry.pinyin.some(([full]) => full.includes(romanized))) return 3;
+        return Infinity;
+      }
+
+      function showNameResults() {
+        const q = searchInput.value.trim().normalize('NFKC').toLowerCase();
         if (!q) {
           searchResults.style.display = 'none';
           return;
         }
+        const pinyin = compactPinyin(q);
+        const romanized = /^[a-z]+$/.test(pinyin) ? pinyin : '';
         const results = [];
         function searchTree(data) {
-          if (data.name && data.name.toLowerCase().includes(q.toLowerCase())) {
-            results.push(data);
-          }
+          const rank = matchName(data, q, romanized);
+          if (rank < Infinity) results.push({ data, rank });
           if (data._children_all) data._children_all.forEach(searchTree);
         }
         searchTree(DATA);
 
+        searchResults.replaceChildren();
+        searchResults.style.display = 'block';
         if (results.length === 0) {
-          searchResults.innerHTML = '<div class="search-item" style="color:#606060">无结果</div>';
-          searchResults.style.display = 'block';
+          const empty = document.createElement('div');
+          empty.setAttribute('role', 'status');
+          empty.className = 'search-item';
+          empty.textContent = '未找到匹配的人名';
+          searchResults.append(empty);
           return;
         }
 
-        searchResults.replaceChildren();
-        searchResults.style.display = 'block';
-        results.slice(0, 30).forEach(result => {
-          const item = document.createElement('div');
+        results.sort((a, b) => a.rank - b.rank).slice(0, 30).forEach(({ data: result }) => {
+          const item = document.createElement('button');
           const generation = document.createElement('span');
+          item.type = 'button';
           item.className = 'search-item';
           item.textContent = result.name;
           generation.className = 'gen';
           generation.textContent = result.generation || '';
           item.append(generation);
           item.addEventListener('click', () => {
-            navigateToNode(result.id);
             searchResults.style.display = 'none';
+            if (compactTreeView.matches) searchInput.blur();
+            navigateToNode(result.id);
           });
           searchResults.append(item);
         });
+      }
+
+      searchInput.addEventListener('compositionstart', () => {
+        composingName = true;
+        searchResults.style.display = 'none';
+      });
+      searchInput.addEventListener('compositionend', () => {
+        composingName = false;
+        showNameResults();
+      });
+      searchInput.addEventListener('input', event => {
+        if (!composingName && !event.isComposing) showNameResults();
       });
 
       function pathTo(data, id) {
@@ -1608,7 +1844,7 @@
         if (saving) return;
         const path = pathTo(DATA, id);
         if (!path) return;
-        const previousId = searchPair.at(-1);
+        const previousId = searchPair[searchPair.length - 1];
         const previousPath = previousId && previousId !== id ? pathTo(DATA, previousId) : null;
         if (previousId !== id) searchPair = previousPath ? [previousId, id] : [id];
 
@@ -1634,14 +1870,20 @@
           }
           const [minX, maxX] = d3.extent(points, node => node._x);
           const [minY, maxY] = d3.extent(points, node => node._y);
-          const scale = Math.min(1, width / (maxX - minX + 360), height / (maxY - minY + 200));
-          centerOnNode((minX + maxX) / 2, (minY + maxY) / 2, scale);
           showInfoPanel(target);
+          const { top, bottom } = treeViewport();
+          const scale = Math.min(1, width / (maxX - minX + 360),
+            (bottom - top) / (maxY - minY + (compactTreeView.matches ? 90 : 200)));
+          centerOnNode((minX + maxX) / 2, (minY + maxY) / 2, scale);
         }
       }
 
       searchInput.addEventListener('keydown', event => {
-        if (event.key === 'Enter') searchResults.querySelector('.search-item')?.click();
+        if (composingName || event.isComposing || event.keyCode === 229) return;
+        if (event.key === 'Enter' && searchResults.style.display === 'block') {
+          event.preventDefault();
+          searchResults.querySelector('button.search-item')?.click();
+        }
         if (event.key !== 'Escape') return;
         searchResults.style.display = 'none';
         searchPair = [];
@@ -1663,12 +1905,13 @@
       const minimapContainer = document.getElementById('minimap-container');
 
       function updateMinimap() {
+        const cw = minimapContainer.clientWidth;
+        const ch = minimapContainer.clientHeight;
+        if (!cw || !ch) return;
         const hierarchy = computeLayout();
         const nodes = hierarchy.descendants();
         if (nodes.length === 0) return;
 
-        const cw = minimapContainer.clientWidth;
-        const ch = minimapContainer.clientHeight;
         minimapCanvas.width = cw;
         minimapCanvas.height = ch;
 
