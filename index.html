@@ -1424,7 +1424,7 @@
       }
 
       function noteLength(note) {
-        return Array.from(note.replace(noteUrls(), '')).length;
+        return Array.from(note.replace(noteUrls(), '').trim()).length;
       }
 
       function updateNoteLimit(inputId, statusId) {
