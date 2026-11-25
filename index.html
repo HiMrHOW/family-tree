@@ -68,6 +68,32 @@
       opacity: .6
     }
 
+    .link-line.search-path {
+      stroke: #FF8C00;
+      stroke-width: 4;
+      opacity: 1;
+    }
+
+    #github-edit-dialog {
+      margin: auto;
+      max-width: min(420px, calc(100vw - 32px));
+      padding: 20px;
+      color: #e0dcd0;
+      background: #17171e;
+      border: 1px solid #807043;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    #github-edit-dialog::backdrop { background: rgba(0, 0, 0, .72); }
+
+    #github-edit-dialog p { margin: 8px 0; }
+    #github-edit-dialog a, #info-desc a { color: #efc76b; }
+    #github-token { display: block; width: 100%; margin: 10px 0; padding: 8px; }
+    #info-desc { user-select: text; overflow-wrap: anywhere; }
+    .note-limit { color: #adadad; font-size: 11px; }
+    .note-limit[aria-invalid="true"] { color: #ff7777; }
+
     .search-highlight .node-label {
       fill: #FF8C00 !important
     }
@@ -639,6 +665,7 @@
       <input id="add-gen" type="text" placeholder="如：8世（修）">
       <label>备注</label>
       <textarea id="add-note" placeholder="可选备注信息…"></textarea>
+      <p id="add-note-limit" class="note-limit"></p>
       <div class="dialog-btns">
         <button class="dialog-btn cancel" id="add-cancel">取消</button>
         <button class="dialog-btn primary" id="add-confirm">确认添加</button>
@@ -661,6 +688,7 @@
       <input id="info-gen-input" type="text">
       <label for="info-textarea">备注</label>
       <textarea id="info-textarea" placeholder="添加备注信息…"></textarea>
+      <p id="info-note-limit" class="note-limit"></p>
     </div>
     <div id="info-edit-actions">
       <button id="info-save-btn">保存全部修改</button>
@@ -670,7 +698,19 @@
     </div>
   </div>
 
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <dialog id="github-edit-dialog">
+    <form id="github-edit-form">
+      <label for="github-token">GitHub 编辑授权</label>
+      <p>使用仅限 family-tree 仓库、拥有 Contents 读写权限的细粒度令牌。授权只在当前页面有效。</p>
+      <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">在 GitHub 创建令牌</a>
+      <input id="github-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+      <p id="github-edit-message" role="status"></p>
+      <button type="submit" class="dialog-btn primary">授权编辑</button>
+      <button id="github-edit-cancel" type="button" class="dialog-btn cancel">取消</button>
+    </form>
+  </dialog>
+
+  <script src="https://d3js.org/d3.v7.min.js" integrity="sha384-LxfWGZyh6PaLjBRPf7NWiEYs9Mn0UQ6ZmqbLLZhxlOBBNWF2a2K0Pfc5efkrNnhQ" crossorigin="anonymous"></script>
   <script>
     // ====== Password Gate ======
     (function () {
@@ -693,24 +733,24 @@
     })();
 
     // ====== Data File Configuration ======
-    const DATA_FILE = 'family_data.json';
-    const DATA_VERSION = '1151e651';
-    const IS_GITHUB_PAGES = location.hostname.endsWith('.github.io');
+    const DATA_FILE = '延陵世家——凉水埠吴氏家谱-db_20260808.json';
+    const IS_GITHUB_PAGES = location.origin === 'https://himrhow.github.io' &&
+      location.pathname.startsWith('/family-tree/');
+    const GITHUB_CONTENTS = 'https://api.github.com/repos/HiMrHOW/family-tree/contents/family_data.json';
     let DATA = null;
     let dataFileHandle = null;
+    let githubToken = '';
+    let githubFileSha = '';
+    let loadedFileText = '';
+    let saving = false;
     let appInitialized = false;
     const dataFileButton = document.getElementById('data-file-button');
     const dataFileInput = document.getElementById('data-file-input');
     const saveStatus = document.getElementById('save-status');
 
     function showDataFileButton(message) {
-      if (IS_GITHUB_PAGES) {
-        dataFileButton.style.display = 'none';
-        saveStatus.style.display = 'none';
-        return;
-      }
-      if (message) saveStatus.textContent = message;
-      dataFileButton.style.display = 'block';
+      if (message && !IS_GITHUB_PAGES) saveStatus.textContent = message;
+      if (!IS_GITHUB_PAGES) dataFileButton.style.display = 'block';
     }
 
     function setConnectedState(fileName) {
@@ -781,41 +821,130 @@
     }
 
     function buildPersistableTree(data, depth = 0) {
-      const children = data._children_all || data.children || [];
-      const node = { name: data.name, id: data.id };
-      if (data.generation) node.generation = data.generation;
-      if (data.note) node.note = data.note;
-      const savedChildren = children.map(child => buildPersistableTree(child, depth + 1));
+      const { _children_all, _children_visible, _expanded, children, ...node } = data;
+      const currentChildren = _children_all === undefined ? children || [] : _children_all || [];
+      if (!node.generation) delete node.generation;
+      if (!node.note) delete node.note;
+      const savedChildren = currentChildren.map(child => buildPersistableTree(child, depth + 1));
       if (savedChildren.length > 0) node.children = savedChildren;
       node.dc = savedChildren.reduce((total, child) => total + 1 + child.dc, 0);
       node.depth = depth;
-      data.dc = node.dc;
-      data.depth = depth;
       return node;
     }
 
-    async function saveDataDirectly() {
-      if (!dataFileHandle || !DATA) {
-        alert('请先点击“连接 JSON，启用直接保存”，并选择家谱 JSON 文件。');
-        return false;
+    const githubDialog = document.getElementById('github-edit-dialog');
+    const githubForm = document.getElementById('github-edit-form');
+    const tokenInput = document.getElementById('github-token');
+    const githubMessage = document.getElementById('github-edit-message');
+
+    document.getElementById('github-edit-cancel').onclick = () => githubDialog.close();
+    githubDialog.addEventListener('close', () => { tokenInput.value = ''; });
+
+    function githubRequest(token, options = {}) {
+      return fetch(GITHUB_CONTENTS, {
+        ...options,
+        cache: 'no-store',
+        redirect: 'error',
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: 'Bearer ' + token,
+          ...options.headers
+        }
+      });
+    }
+
+    githubForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      const token = tokenInput.value.trim();
+      tokenInput.value = '';
+      const submit = githubForm.querySelector('[type=submit]');
+      submit.disabled = true;
+      githubMessage.textContent = '正在核对 GitHub 数据…';
+      try {
+        const response = await githubRequest(token, {
+          headers: { Accept: 'application/vnd.github.raw+json' }
+        });
+        if (!response.ok) throw new Error('GitHub 拒绝授权或读取（' + response.status + '）。');
+        const text = await response.text();
+        if (text !== loadedFileText) {
+          throw new Error('网页和 GitHub 数据版本不同，请等待部署完成后刷新。');
+        }
+        const bytes = new TextEncoder().encode(text);
+        const blob = new Blob(['blob ' + bytes.length + '\0', bytes]);
+        const digest = await crypto.subtle.digest('SHA-1', await blob.arrayBuffer());
+        if (!githubDialog.open) return;
+        githubFileSha = Array.from(new Uint8Array(digest), byte =>
+          byte.toString(16).padStart(2, '0')).join('');
+        githubToken = token;
+        githubDialog.close();
+        document.getElementById('info-edit-btn').click();
+      } catch (error) {
+        githubMessage.textContent = error.message;
+      } finally {
+        submit.disabled = false;
       }
+    });
+
+    async function saveToGitHub(json) {
+      const bytes = new TextEncoder().encode(json);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 8192) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      }
+      const response = await githubRequest(githubToken, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: '更新家谱人物资料',
+          branch: 'main',
+          sha: githubFileSha,
+          content: btoa(binary)
+        })
+      });
+      if (response.status === 409 || response.status === 422) {
+        throw new Error('GitHub 未接受写入，资料可能已更新。请先复制刚编辑的内容，再刷新核对。');
+      }
+      if (response.status === 401 || response.status === 403 || response.status === 404) {
+        githubToken = '';
+        throw new Error('GitHub 写入失败，请检查令牌的仓库范围和 Contents 写入权限。');
+      }
+      if (!response.ok) throw new Error('GitHub 保存失败（' + response.status + '）。');
+      const result = await response.json();
+      githubFileSha = result.content.sha;
+      loadedFileText = json;
+    }
+
+    async function saveDataDirectly() {
+      if (saving || !DATA || !requireWritableFile()) return false;
+      saving = true;
       saveStatus.textContent = '正在保存…';
       try {
-        const output = buildPersistableTree(DATA);
-        const writable = await dataFileHandle.createWritable();
-        await writable.write(JSON.stringify(output, null, 2));
-        await writable.close();
-        saveStatus.textContent = '✓ 已直接保存到 JSON 文件';
+        const json = JSON.stringify(buildPersistableTree(DATA), null, 2);
+        if (IS_GITHUB_PAGES) {
+          await saveToGitHub(json);
+          saveStatus.textContent = '✓ 已提交到 GitHub，网页随后更新';
+        } else {
+          const writable = await dataFileHandle.createWritable();
+          await writable.write(json);
+          await writable.close();
+          saveStatus.textContent = '✓ 已直接保存到 JSON 文件';
+        }
         return true;
       } catch (e) {
-        console.error('Failed to save JSON data:', e);
-        saveStatus.textContent = '保存失败，请重新连接 JSON 文件';
-        alert('无法写入 JSON 文件，请检查文件权限后重试。');
+        saveStatus.textContent = IS_GITHUB_PAGES ? e.message : '无法写入 JSON 文件，请检查文件权限后重试。';
         return false;
+      } finally {
+        saving = false;
       }
     }
 
     function requireWritableFile() {
+      if (IS_GITHUB_PAGES) {
+        if (githubToken) return true;
+        githubMessage.textContent = '';
+        if (!githubDialog.open) githubDialog.showModal();
+        return false;
+      }
       if (dataFileHandle) return true;
       alert('编辑前请先点击“连接 JSON，启用直接保存”，并选择家谱 JSON 文件。');
       return false;
@@ -824,17 +953,20 @@
     dataFileButton.addEventListener('click', connectEditableDataFile);
     dataFileInput.addEventListener('change', () => loadSelectedFileReadOnly(dataFileInput.files[0]));
 
-    // HTTP/GitHub Pages 环境可只读浏览；直接编辑必须先授权写入本地 JSON 文件。
     if (location.protocol === 'file:') {
       document.getElementById('stats-line').textContent = '请先连接家谱 JSON 文件';
       showDataFileButton('选择文件一次，之后每次编辑都会直接保存');
     } else {
-      fetch(encodeURI(DATA_FILE) + '?v=' + DATA_VERSION, { cache: 'no-store' })
+      const dataUrl = IS_GITHUB_PAGES ? 'family_data.json?v=' + Date.now() : encodeURI(DATA_FILE);
+      fetch(dataUrl, { cache: 'no-store' })
         .then(r => {
           if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.json();
+          return r.text();
         })
-        .then(initApp)
+        .then(text => {
+          loadedFileText = text;
+          initApp(JSON.parse(text));
+        })
         .catch(e => {
           console.error('Failed to load ' + DATA_FILE + ':', e);
           document.getElementById('stats-line').textContent = '数据加载失败：' + DATA_FILE;
@@ -927,7 +1059,15 @@
       const LEAF_R = 4;
 
       let currentSelected = null;
-      let searchHighlighted = null;
+      let searchPair = [];
+      let searchPath = new Set();
+
+      function generationRow(label, fallback) {
+        const ancestor = (label || '').match(/祖\s*(\d+)\s*世/);
+        if (ancestor) return Number(ancestor[1]) - 1;
+        const local = (label || '').match(/(?:凉水埠\s*)?(\d+)\s*(?:世|[（(])/);
+        return local ? Number(local[1]) + 9 : fallback;
+      }
 
       // ====== Format generation label ======
       function formatGen(gen) {
@@ -980,10 +1120,18 @@
         }
         assignX(hierarchy, 0);
 
-        // Assign y: bottom-up based on depth. Root at bottom (max depth * ROW_HEIGHT)
-        const maxDepth = hierarchy.height;
-        hierarchy.each(n => {
-          n._y = (maxDepth - n.depth) * ROW_HEIGHT;
+        const rows = new Map();
+        hierarchy.eachBefore(n => {
+          n._row = generationRow(n.data.generation, n.parent ? n.parent._row + 1 : 0);
+          n._y = -n._row * ROW_HEIGHT;
+          if (!rows.has(n._row)) rows.set(n._row, []);
+          rows.get(n._row).push(n);
+        });
+        rows.forEach(row => {
+          row.sort((a, b) => a._x - b._x);
+          for (let i = 1; i < row.length; i++) {
+            row[i]._x = Math.max(row[i]._x, row[i - 1]._x + NODE_WIDTH + NODE_H_GAP);
+          }
         });
 
         return hierarchy;
@@ -1014,12 +1162,17 @@
           .attr('d', d => `M${sx},${sy}L${sx},${sy}`);
 
         linkEnter.merge(linkSel)
+          .classed('search-path', d => searchPath.has(d.target.data.id))
           .transition().duration(400)
           .attr('d', d => {
             const parentX = d.source._x;
             const parentY = d.source._y;
             const childX = d.target._x;
             const childY = d.target._y;
+            if (parentY === childY) {
+              const arcY = parentY - ROW_HEIGHT / 3;
+              return `M${parentX},${parentY} C${parentX},${arcY} ${childX},${arcY} ${childX},${childY}`;
+            }
             const midY = parentY - (parentY - childY) * 0.4;
             return `M${parentX},${parentY - CIRCLE_R - 2}` +
               `C${parentX},${midY} ${childX},${midY} ${childX},${childY + CIRCLE_R + 14}`;
@@ -1037,7 +1190,7 @@
         const nodeEnter = nodeSel.enter().append('g')
           .attr('class', d => {
             let cls = 'node-group';
-            if (searchHighlighted && searchHighlighted === d.data.id) cls += ' search-highlight';
+            if (searchPair.includes(d.data.id)) cls += ' search-highlight';
             return cls;
           })
           .attr('transform', `translate(${sx},${sy})`)
@@ -1049,14 +1202,10 @@
           .attr('cx', 0).attr('cy', 0)
           .attr('r', d => d.data._children_all ? CIRCLE_R : LEAF_R)
           .attr('fill', d => {
-            if (searchHighlighted && searchHighlighted === d.data.id) return '#FF8C00';
             if (!d.data._children_all) return 'transparent';
             return d.data._expanded ? 'transparent' : '#D4AF37';
           })
-          .attr('stroke', d => {
-            if (searchHighlighted && searchHighlighted === d.data.id) return '#FF8C00';
-            return '#D4AF37';
-          })
+          .attr('stroke', '#D4AF37')
           .attr('stroke-width', d => d.data._children_all ? 2 : 1.2)
           .on('click', (event, d) => {
             event.stopPropagation();
@@ -1077,7 +1226,6 @@
             // Wrap text to NODE_WIDTH
             wrapText(text, name, NODE_WIDTH + 10);
           })
-          .style('fill', d => (searchHighlighted && searchHighlighted === d.data.id) ? '#FF8C00' : '#D4AF37')
           .on('click', (event, d) => {
             event.stopPropagation();
             showInfoPanel(d);
@@ -1100,7 +1248,7 @@
         nodeUpdate
           .attr('class', d => {
             let cls = 'node-group';
-            if (searchHighlighted && searchHighlighted === d.data.id) cls += ' search-highlight';
+            if (searchPair.includes(d.data.id)) cls += ' search-highlight';
             return cls;
           })
           .transition().duration(400)
@@ -1112,21 +1260,16 @@
           .transition().duration(300)
           .attr('r', d => d.data._children_all ? CIRCLE_R : LEAF_R)
           .attr('fill', d => {
-            if (searchHighlighted && searchHighlighted === d.data.id) return '#FF8C00';
             if (!d.data._children_all) return 'transparent';
             return d.data._expanded ? 'transparent' : '#D4AF37';
           })
-          .attr('stroke', d => {
-            if (searchHighlighted && searchHighlighted === d.data.id) return '#FF8C00';
-            return '#D4AF37';
-          });
+          .attr('stroke', '#D4AF37');
 
         // Update labels after edits and update search color
         nodeUpdate.select('.node-label')
           .each(function (d) {
             wrapText(d3.select(this), d.data.name || '', NODE_WIDTH + 10);
-          })
-          .style('fill', d => (searchHighlighted && searchHighlighted === d.data.id) ? '#FF8C00' : '#D4AF37');
+          });
 
         nodeUpdate.select('.node-gen-label')
           .attr('y', d => {
@@ -1275,7 +1418,48 @@
       });
 
       // ====== Info Panel ======
+      function noteUrls() {
+        return /https?:\/\/[^\s<>"，。；！？、（）「」【】]+/gi;
+      }
+
+      function noteLength(note) {
+        return Array.from(note.replace(noteUrls(), '')).length;
+      }
+
+      function updateNoteLimit(inputId, statusId) {
+        const input = document.getElementById(inputId);
+        const status = document.getElementById(statusId);
+        const length = noteLength(input.value);
+        status.textContent = length + ' / 1000 字（链接不计）' + (length > 1000 ? '，请缩短正文' : '');
+        status.setAttribute('aria-invalid', String(length > 1000));
+        input.setAttribute('aria-invalid', String(length > 1000));
+        return length <= 1000;
+      }
+
+      function renderNote(note) {
+        const container = document.getElementById('info-desc');
+        container.replaceChildren();
+        let offset = 0;
+        for (const match of note.matchAll(noteUrls())) {
+          container.append(note.slice(offset, match.index));
+          const link = document.createElement('a');
+          link.href = match[0];
+          link.textContent = match[0];
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          container.append(link);
+          offset = match.index + match[0].length;
+        }
+        container.append(note.slice(offset) || (!note ? '暂无备注信息' : ''));
+      }
+
+      document.getElementById('info-textarea').addEventListener('input', () =>
+        updateNoteLimit('info-textarea', 'info-note-limit'));
+      document.getElementById('add-note').addEventListener('input', () =>
+        updateNoteLimit('add-note', 'add-note-limit'));
+
       function showInfoPanel(d) {
+        if (saving) return;
         currentSelected = d;
         const panel = document.getElementById('info-panel');
         panel.style.display = 'block';
@@ -1289,10 +1473,11 @@
         document.getElementById('info-name').textContent = data.name || '';
         document.getElementById('info-gen').textContent = data.generation || '未填写世代';
         document.getElementById('info-descendants').textContent = `此人以下收录 ${countDescendants(data)} 人`;
-        document.getElementById('info-desc').textContent = data.note || '暂无备注信息';
+        renderNote(data.note || '');
         document.getElementById('info-name-input').value = data.name || '';
         document.getElementById('info-gen-input').value = data.generation || '';
         document.getElementById('info-textarea').value = data.note || '';
+        updateNoteLimit('info-textarea', 'info-note-limit');
         document.getElementById('info-delete-btn').style.visibility = data === DATA ? 'hidden' : 'visible';
       }
 
@@ -1311,6 +1496,7 @@
       }
 
       document.getElementById('info-close').addEventListener('click', () => {
+        if (saving) return;
         document.getElementById('info-panel').style.display = 'none';
         setInfoEditMode(false);
         currentSelected = null;
@@ -1318,8 +1504,8 @@
 
       let editUnlocked = false;
       document.getElementById('info-edit-btn').addEventListener('click', () => {
-        if (!requireWritableFile()) return;
-        if (!editUnlocked) {
+        if (saving || !currentSelected || !requireWritableFile()) return;
+        if (!IS_GITHUB_PAGES && !editUnlocked) {
           const pwd = prompt('请输入编辑密码：');
           if (pwd !== 'Lsb@1775') {
             alert('密码错误');
@@ -1332,21 +1518,24 @@
       });
 
       document.getElementById('info-save-btn').addEventListener('click', async () => {
-        if (!currentSelected) return;
+        if (saving || !currentSelected || !requireWritableFile()) return;
         const name = document.getElementById('info-name-input').value.trim();
         if (!name) { alert('姓名不能为空'); return; }
         const generation = document.getElementById('info-gen-input').value.trim();
         const note = document.getElementById('info-textarea').value.trim();
+        if (!updateNoteLimit('info-textarea', 'info-note-limit')) {
+          document.getElementById('info-textarea').focus();
+          return;
+        }
+        const data = currentSelected.data;
         const previous = {
-          name: currentSelected.data.name || '',
-          generation: currentSelected.data.generation || '',
-          note: currentSelected.data.note || ''
+          name: data.name,
+          generation: data.generation,
+          note: data.note
         };
-        currentSelected.data.name = name;
-        currentSelected.data.generation = generation;
-        currentSelected.data.note = note;
+        Object.assign(data, { name, generation, note });
         if (!await saveDataDirectly()) {
-          Object.assign(currentSelected.data, previous);
+          Object.assign(data, previous);
           return;
         }
         render(null);
@@ -1356,7 +1545,7 @@
       });
 
       document.getElementById('info-cancel-btn').addEventListener('click', () => {
-        setInfoEditMode(false);
+        if (!saving) setInfoEditMode(false);
       });
 
       // ====== Search ======
@@ -1367,12 +1556,11 @@
         const q = searchInput.value.trim();
         if (!q) {
           searchResults.style.display = 'none';
-          clearSearchHighlight();
           return;
         }
         const results = [];
         function searchTree(data) {
-          if (data.name && data.name.includes(q)) {
+          if (data.name && data.name.toLowerCase().includes(q.toLowerCase())) {
             results.push(data);
           }
           if (data._children_all) data._children_all.forEach(searchTree);
@@ -1385,66 +1573,77 @@
           return;
         }
 
-        searchResults.innerHTML = results.slice(0, 30).map(r =>
-          `<div class="search-item" data-id="${r.id || ''}" data-name="${r.name}">` +
-          `${r.name}<span class="gen">${r.generation || ''}</span></div>`
-        ).join('');
+        searchResults.replaceChildren();
         searchResults.style.display = 'block';
-
-        searchResults.querySelectorAll('.search-item').forEach(item => {
+        results.slice(0, 30).forEach(result => {
+          const item = document.createElement('div');
+          const generation = document.createElement('span');
+          item.className = 'search-item';
+          item.textContent = result.name;
+          generation.className = 'gen';
+          generation.textContent = result.generation || '';
+          item.append(generation);
           item.addEventListener('click', () => {
-            const id = item.dataset.id;
-            const name = item.dataset.name;
-            navigateToNode(id, name);
+            navigateToNode(result.id);
             searchResults.style.display = 'none';
           });
+          searchResults.append(item);
         });
       });
 
-      function navigateToNode(id, name) {
-        // Expand the path from root to this node
-        function findPath(data, targetId, targetName, path) {
-          if ((data.id && data.id === targetId) || data.name === targetName) {
-            path.push(data);
-            return true;
-          }
-          if (data._children_all) {
-            for (const child of data._children_all) {
-              path.push(data);
-              if (findPath(child, targetId, targetName, path)) return true;
-              path.pop();
-            }
-          }
-          return false;
+      function pathTo(data, id) {
+        if (data.id === id) return [data];
+        for (const child of data._children_all || []) {
+          const path = pathTo(child, id);
+          if (path) return [data, ...path];
         }
+        return null;
+      }
 
-        const path = [];
-        findPath(DATA, id, name, path);
+      function navigateToNode(id) {
+        if (saving) return;
+        const path = pathTo(DATA, id);
+        if (!path) return;
+        const previousId = searchPair.at(-1);
+        const previousPath = previousId && previousId !== id ? pathTo(DATA, previousId) : null;
+        if (previousId !== id) searchPair = previousPath ? [previousId, id] : [id];
 
-        // Expand each node in path
-        path.forEach(p => {
-          if (p._children_all) {
-            p._children_visible = p._children_all;
-            p._expanded = true;
-          }
+        const firstPath = previousId === id && searchPair.length === 2
+          ? pathTo(DATA, searchPair[0]) : previousPath;
+        let common = 0;
+        while (firstPath && path[common] && firstPath[common] === path[common]) common++;
+        searchPath = new Set(firstPath
+          ? [...firstPath.slice(common), ...path.slice(common)].map(person => person.id) : []);
+        [...(firstPath || []).slice(0, -1), ...path.slice(0, -1)].forEach(person => {
+          person._children_visible = person._children_all;
+          person._expanded = true;
         });
 
-        // Set highlight
-        searchHighlighted = id || name;
-
         const hierarchy = render(null);
-        const target = findNodeInHierarchy(hierarchy, id || name);
+        const target = findNodeInHierarchy(hierarchy, id);
         if (target) {
-          centerOnNode(target._x, target._y, 1);
-          // Show info
+          const points = hierarchy.descendants().filter(node =>
+            searchPair.includes(node.data.id) || searchPath.has(node.data.id));
+          if (firstPath && common) {
+            const ancestor = findNodeInHierarchy(hierarchy, path[common - 1].id);
+            if (ancestor) points.push(ancestor);
+          }
+          const [minX, maxX] = d3.extent(points, node => node._x);
+          const [minY, maxY] = d3.extent(points, node => node._y);
+          const scale = Math.min(1, width / (maxX - minX + 360), height / (maxY - minY + 200));
+          centerOnNode((minX + maxX) / 2, (minY + maxY) / 2, scale);
           showInfoPanel(target);
         }
       }
 
-      function clearSearchHighlight() {
-        searchHighlighted = null;
+      searchInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') searchResults.querySelector('.search-item')?.click();
+        if (event.key !== 'Escape') return;
+        searchResults.style.display = 'none';
+        searchPair = [];
+        searchPath.clear();
         render(null);
-      }
+      });
 
       // Click outside to close search
       document.addEventListener('click', (e) => {
@@ -1542,7 +1741,7 @@
       }
 
       function findParentData(root, targetId) {
-        const children = root._children_all || root.children || [];
+        const children = root._children_all || [];
         for (const c of children) {
           if (c.id === targetId) return root;
           const found = findParentData(c, targetId);
@@ -1553,12 +1752,13 @@
 
       // ====== Add Node ======
       document.getElementById('info-add-child-btn').addEventListener('click', () => {
-        if (!currentSelected || !requireWritableFile()) return;
+        if (saving || !currentSelected || !requireWritableFile()) return;
         const parentData = currentSelected.data;
         document.getElementById('add-dialog-title').textContent = '为「' + (parentData.name || '') + '」添加子节点';
         document.getElementById('add-name').value = '';
         document.getElementById('add-gen').value = '';
         document.getElementById('add-note').value = '';
+        updateNoteLimit('add-note', 'add-note-limit');
         const overlay = document.getElementById('add-node-overlay');
         overlay.style.display = 'flex';
         overlay._parentData = parentData;
@@ -1568,11 +1768,15 @@
       document.getElementById('add-confirm').addEventListener('click', async () => {
         const overlay = document.getElementById('add-node-overlay');
         const parentData = overlay._parentData;
-        if (!parentData) return;
+        if (saving || !parentData || !requireWritableFile()) return;
         const name = document.getElementById('add-name').value.trim();
         if (!name) { alert('请输入姓名'); return; }
         const gen = document.getElementById('add-gen').value.trim();
         const note = document.getElementById('add-note').value.trim();
+        if (!updateNoteLimit('add-note', 'add-note-limit')) {
+          document.getElementById('add-note').focus();
+          return;
+        }
         const newId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
         const newNode = {
           name: name,
@@ -1586,17 +1790,15 @@
           dc: 0,
           depth: (parentData.depth || 0) + 1
         };
-        if (!parentData._children_all) parentData._children_all = [];
-        parentData._children_all.push(newNode);
+        const originalChildren = parentData._children_all;
+        const originallyExpanded = parentData._expanded;
+        parentData._children_all = [...(originalChildren || []), newNode];
         parentData._children_visible = parentData._children_all;
         parentData._expanded = true;
         if (!await saveDataDirectly()) {
-          parentData._children_all = parentData._children_all.filter(child => child.id !== newId);
-          if (parentData._children_all.length === 0) {
-            parentData._children_all = null;
-            parentData._children_visible = null;
-            parentData._expanded = false;
-          }
+          parentData._children_all = originalChildren;
+          parentData._expanded = originallyExpanded;
+          parentData._children_visible = originallyExpanded ? originalChildren : null;
           return;
         }
         // Re-render
@@ -1608,27 +1810,29 @@
       });
 
       document.getElementById('add-cancel').addEventListener('click', () => {
-        document.getElementById('add-node-overlay').style.display = 'none';
+        if (!saving) document.getElementById('add-node-overlay').style.display = 'none';
       });
 
       document.getElementById('add-node-overlay').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+        if (!saving && e.target === e.currentTarget) e.currentTarget.style.display = 'none';
       });
 
       // ====== Delete Node ======
       document.getElementById('info-delete-btn').addEventListener('click', async () => {
-        if (!currentSelected || !requireWritableFile()) return;
+        if (saving || !currentSelected || !requireWritableFile()) return;
         const nodeData = currentSelected.data;
         if (nodeData === DATA) { alert('不能删除根节点'); return; }
-        const childCount = nodeData._children_all ? nodeData._children_all.length : 0;
+        const childCount = countDescendants(nodeData);
         const msg = childCount > 0
-          ? '确定要删除「' + nodeData.name + '」及其 ' + childCount + ' 个子节点吗？\n\n此操作不可撤销。'
+          ? '确定要删除「' + nodeData.name + '」及其 ' + childCount + ' 位后代吗？\n\n此操作不可撤销。'
           : '确定要删除「' + nodeData.name + '」吗？\n\n此操作不可撤销。';
         if (!confirm(msg)) return;
         // Find parent and remove
         const parent = findParentData(DATA, nodeData.id);
-        const originalChildren = parent && parent._children_all ? [...parent._children_all] : null;
-        if (parent && parent._children_all) {
+        if (!parent) return;
+        const originalChildren = parent._children_all;
+        const originallyExpanded = parent._expanded;
+        if (parent._children_all) {
           parent._children_all = parent._children_all.filter(c => c.id !== nodeData.id);
           if (parent._children_all.length === 0) {
             parent._children_all = null;
@@ -1639,12 +1843,13 @@
           }
         }
         if (!await saveDataDirectly()) {
-          if (parent && originalChildren) {
-            parent._children_all = originalChildren;
-            if (parent._expanded) parent._children_visible = parent._children_all;
-          }
+          parent._children_all = originalChildren;
+          parent._expanded = originallyExpanded;
+          parent._children_visible = originallyExpanded ? originalChildren : null;
           return;
         }
+        searchPair = searchPair.filter(id => pathTo(DATA, id));
+        if (searchPair.length < 2) searchPath.clear();
         // Re-render
         render(null);
         document.getElementById('info-panel').style.display = 'none';
