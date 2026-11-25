@@ -66,10 +66,41 @@
       opacity: .6
     }
 
-    .link-line.search-path {
+    .link-line.search-path, .kinship-trace {
       stroke: #FF8C00;
       stroke-width: 4;
       opacity: 1;
+    }
+
+    .kinship-trace {
+      fill: none;
+      pointer-events: none;
+      stroke-linecap: round;
+      stroke-dasharray: 1 1;
+      stroke-dashoffset: 1;
+      animation: kinship-trace var(--trace-step) linear var(--trace-delay) forwards;
+    }
+
+    @keyframes kinship-trace {
+      to { stroke-dashoffset: 0; }
+    }
+
+    .kinship-flower { pointer-events: none; }
+    .kinship-flower.is-blooming {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: kinship-bloom 440ms ease-out var(--bloom-delay) both;
+    }
+
+    @keyframes kinship-bloom {
+      0% { opacity: 0; transform: scale(.2); }
+      68% { opacity: 1; transform: scale(1.16); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .kinship-trace { animation: none; stroke-dashoffset: 0; }
+      .kinship-flower.is-blooming { animation: none; }
     }
 
     #github-edit-dialog {
@@ -96,7 +127,7 @@
       fill: #FF8C00 !important
     }
 
-    .search-highlight circle {
+    .search-highlight .node-circle {
       fill: #FF8C00 !important;
       stroke: #FF8C00 !important
     }
@@ -1222,6 +1253,9 @@
       let currentSelected = null;
       let searchPair = [];
       let searchPath = new Set();
+      let searchRevealVersion = 0;
+      const reduceKinshipMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const SEARCH_FOCUS_MS = 600;
 
       function generationRow(label, fallback) {
         const ancestor = (label || '').match(/祖\s*(\d+)\s*世/);
@@ -1302,10 +1336,27 @@
       }
 
       // ====== Render ======
-      function render(sourceNode) {
+      function linkGeometry({ source, target }) {
+        const { _x: px, _y: py } = source;
+        const { _x: cx, _y: cy } = target;
+        if (py === cy) {
+          const arcY = py - ROW_HEIGHT / 3;
+          return `M${px},${py} C${px},${arcY} ${cx},${arcY} ${cx},${cy}`;
+        }
+        const midY = py - (py - cy) * 0.4;
+        return `M${px},${py - CIRCLE_R - 2}` +
+          `C${px},${midY} ${cx},${midY} ${cx},${cy + CIRCLE_R + 14}`;
+      }
+
+      function render(sourceNode, searchBranches = null) {
+        searchRevealVersion++;
         const hierarchy = computeLayout();
         const nodes = hierarchy.descendants();
         const links = hierarchy.links();
+        const depth = searchBranches ? Math.max(...searchBranches.map(branch => branch.length)) : 0;
+        const animate = depth > 0 && !reduceKinshipMotion.matches;
+        const stepMs = animate ? Math.min(190, 1600 / depth) : 0;
+        g.selectAll('.kinship-traces, .kinship-flower').remove();
 
         // Determine source position for animation
         const sx = sourceNode ? sourceNode._x : (nodes[0] ? nodes[0]._x : 0);
@@ -1321,26 +1372,14 @@
           })
           .remove();
 
-        const linkEnter = linkSel.enter().append('path')
+        const linkEnter = linkSel.enter().insert('path', '.node-group')
           .attr('class', 'link-line')
           .attr('d', d => `M${sx},${sy}L${sx},${sy}`);
 
         linkEnter.merge(linkSel)
-          .classed('search-path', d => searchPath.has(d.target.data.id))
+          .classed('search-path', d => !animate && searchPath.has(d.target.data.id))
           .transition().duration(400)
-          .attr('d', d => {
-            const parentX = d.source._x;
-            const parentY = d.source._y;
-            const childX = d.target._x;
-            const childY = d.target._y;
-            if (parentY === childY) {
-              const arcY = parentY - ROW_HEIGHT / 3;
-              return `M${parentX},${parentY} C${parentX},${arcY} ${childX},${arcY} ${childX},${childY}`;
-            }
-            const midY = parentY - (parentY - childY) * 0.4;
-            return `M${parentX},${parentY - CIRCLE_R - 2}` +
-              `C${parentX},${midY} ${childX},${midY} ${childX},${childY + CIRCLE_R + 14}`;
-          });
+          .attr('d', linkGeometry);
 
         // ---- Nodes ----
         const nodeSel = g.selectAll('.node-group').data(nodes, d => d.data.id || d.data.name);
@@ -1442,6 +1481,32 @@
           })
           .text(d => formatGen(d.data.generation || ''));
 
+        if (animate) {
+          const order = new Map(searchBranches.flatMap(branch =>
+            branch.map((person, index) => [person.id, index])));
+          g.insert('g', '.node-group').attr('class', 'kinship-traces').attr('aria-hidden', 'true')
+            .style('--trace-step', stepMs + 'ms')
+            .selectAll('path').data(links.filter(d => order.has(d.target.data.id))).join('path')
+            .attr('class', 'kinship-trace')
+            .attr('d', linkGeometry)
+            .attr('pathLength', 1)
+            .style('--trace-delay', d => SEARCH_FOCUS_MS + order.get(d.target.data.id) * stepMs + 'ms');
+        }
+
+        const endpoints = nodeUpdate.filter(d => searchPair.includes(d.data.id));
+        if (searchPair.length === 2 && endpoints.size() === 2) {
+          const flowers = endpoints.append('g').attr('class', 'kinship-flower').attr('aria-hidden', 'true')
+            .classed('is-blooming', animate);
+          if (animate) flowers.style('--bloom-delay', SEARCH_FOCUS_MS + depth * stepMs + 'ms');
+          [45, 135, 225, 315].forEach(angle => {
+            flowers.append('ellipse')
+              .attr('cy', -8).attr('rx', 5.1).attr('ry', 7.3)
+              .attr('transform', `rotate(${angle})`).attr('fill', '#FFD64C')
+              .attr('stroke', '#DD8A14').attr('stroke-width', 1);
+          });
+          flowers.append('circle').attr('r', 3.2).attr('fill', '#B56A19');
+        }
+
         setTimeout(updateMinimap, 500);
         return hierarchy;
       }
@@ -1526,13 +1591,17 @@
         return bottom > top ? { top, bottom } : { top: 0, bottom: height };
       }
 
-      function centerOnNode(x, y, scale) {
+      function centerOnNode(x, y, scale, duration = SEARCH_FOCUS_MS) {
         const s = scale || d3.zoomTransform(svg.node()).k;
         const tx = width / 2 - x * s;
         const { top, bottom } = treeViewport();
         const ty = (top + bottom) / 2 - y * s;
-        svg.transition().duration(600)
-          .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(s));
+        const transform = d3.zoomIdentity.translate(tx, ty).scale(s);
+        if (!duration) {
+          svg.interrupt().call(zoom.transform, transform);
+          return null;
+        }
+        return svg.transition().duration(duration).call(zoom.transform, transform);
       }
 
       // ====== Fit all ======
@@ -1634,6 +1703,7 @@
 
       function showInfoPanel(d) {
         if (saving) return;
+        searchRevealVersion++;
         currentSelected = d;
         const panel = document.getElementById('info-panel');
         panel.style.display = 'block';
@@ -1852,14 +1922,14 @@
           ? pathTo(DATA, searchPair[0]) : previousPath;
         let common = 0;
         while (firstPath && path[common] && firstPath[common] === path[common]) common++;
-        searchPath = new Set(firstPath
-          ? [...firstPath.slice(common), ...path.slice(common)].map(person => person.id) : []);
+        const branches = firstPath ? [firstPath.slice(common), path.slice(common)] : null;
+        searchPath = new Set(branches ? branches.flat().map(person => person.id) : []);
         [...(firstPath || []).slice(0, -1), ...path.slice(0, -1)].forEach(person => {
           person._children_visible = person._children_all;
           person._expanded = true;
         });
 
-        const hierarchy = render(null);
+        const hierarchy = render(null, branches);
         const target = findNodeInHierarchy(hierarchy, id);
         if (target) {
           const points = hierarchy.descendants().filter(node =>
@@ -1870,11 +1940,31 @@
           }
           const [minX, maxX] = d3.extent(points, node => node._x);
           const [minY, maxY] = d3.extent(points, node => node._y);
-          showInfoPanel(target);
-          const { top, bottom } = treeViewport();
-          const scale = Math.min(1, width / (maxX - minX + 360),
-            (bottom - top) / (maxY - minY + (compactTreeView.matches ? 90 : 200)));
-          centerOnNode((minX + maxX) / 2, (minY + maxY) / 2, scale);
+          document.getElementById('info-panel').style.display = 'none';
+          currentSelected = null;
+          function focusResult(duration) {
+            const { top, bottom } = treeViewport();
+            const scale = Math.min(1, width / (maxX - minX + 360),
+              (bottom - top) / (maxY - minY + (compactTreeView.matches ? 90 : 200)));
+            return centerOnNode((minX + maxX) / 2, (minY + maxY) / 2, scale, duration);
+          }
+          const version = searchRevealVersion;
+          const pending = g.selectAll('.kinship-flower.is-blooming').nodes().map(flower =>
+            new Promise(resolve => {
+              flower.addEventListener('animationend', resolve, { once: true });
+              flower.addEventListener('animationcancel', resolve, { once: true });
+            }));
+          const focus = focusResult(
+            reduceKinshipMotion.matches ? 0 : SEARCH_FOCUS_MS);
+          if (focus) pending.push(focus.end());
+
+          function revealResult() {
+            if (version !== searchRevealVersion) return;
+            showInfoPanel(target);
+            if (compactTreeView.matches) focusResult(0);
+          }
+          if (pending.length) Promise.allSettled(pending).then(revealResult);
+          else revealResult();
         }
       }
 
@@ -2123,7 +2213,7 @@
       DATA._children_visible = DATA._children_all;
       DATA._expanded = true;
       render(null);
-      setTimeout(fitAll, 600);
+      setTimeout(() => { if (!searchPair.length) fitAll(); }, 600);
     }
   </script>
 </body>
