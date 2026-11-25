@@ -1123,7 +1123,10 @@
 
         const rows = new Map();
         hierarchy.eachBefore(n => {
-          n._row = generationRow(n.data.generation, n.parent ? n.parent._row + 1 : 0);
+          const motherGroup = n.parent && /^\p{Script=Han}{1,3}氏生$/u.test(n.parent.data.name);
+          // Children listed under a birth-mother group belong to the group's generation.
+          const fallback = n.parent ? n.parent._row + (motherGroup ? 0 : 1) : 0;
+          n._row = generationRow(n.data.generation, fallback);
           n._y = -n._row * ROW_HEIGHT;
           if (!rows.has(n._row)) rows.set(n._row, []);
           rows.get(n._row).push(n);
