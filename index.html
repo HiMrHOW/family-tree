@@ -67,7 +67,7 @@
     }
 
     .link-line.search-path, .kinship-trace {
-      stroke: #FF8C00;
+      stroke: #80AE4E;
       stroke-width: 4;
       opacity: 1;
     }
@@ -113,27 +113,18 @@
     }
 
     .search-highlight.kinship-endpoint > .node-label {
-      fill: #382B19;
-      stroke: #FFF2C4;
-      stroke-width: 2.4px;
+      fill: #000;
+      font-weight: 700;
+      stroke: #FFF;
+      stroke-width: 3.6px;
       stroke-linejoin: round;
       paint-order: stroke;
-    }
-
-    .kinship-endpoint.is-blooming > .node-label {
-      animation: kinship-name-tone var(--bloom-duration) var(--bloom-ease) var(--bloom-delay) both;
-    }
-
-    @keyframes kinship-name-tone {
-      0%, 25% { fill: #FF8C00; stroke: transparent; }
-      to { fill: #382B19; stroke: #FFF2C4; }
     }
 
     @media (prefers-reduced-motion: reduce) {
       .kinship-trace { animation: none; stroke-dashoffset: 0; }
       .kinship-flower.is-blooming,
-      .kinship-endpoint.is-blooming > .node-circle,
-      .kinship-endpoint.is-blooming > .node-label { animation: none; }
+      .kinship-endpoint.is-blooming > .node-circle { animation: none; }
     }
 
     #github-edit-dialog {
@@ -1214,8 +1205,8 @@
       const defs = svg.append('defs');
       const petalTint = defs.append('radialGradient').attr('id', 'kinship-petal-tint')
         .attr('cx', '38%').attr('cy', '32%');
-      petalTint.append('stop').attr('offset', '0%').attr('stop-color', '#FFF8D9');
-      petalTint.append('stop').attr('offset', '100%').attr('stop-color', '#F4DFA2');
+      petalTint.append('stop').attr('offset', '0%').attr('stop-color', '#FFF068');
+      petalTint.append('stop').attr('offset', '100%').attr('stop-color', '#F5C516');
       // Glow filter
       const glowFilter = defs.append('filter').attr('id', 'glow');
       glowFilter.append('feGaussianBlur').attr('stdDeviation', '3').attr('result', 'blur');
@@ -1545,14 +1536,28 @@
               event.stopPropagation();
               toggleNode(d);
             });
-          const blossom = flowers.append('g').attr('transform', `translate(0,${CIRCLE_R + 12}) scale(3)`);
-          [45, 135, 225, 315].forEach(angle => {
-            blossom.append('ellipse')
-              .attr('cy', -8).attr('rx', 5.1).attr('ry', 7.3)
-              .attr('transform', `rotate(${angle})`).attr('fill', 'url(#kinship-petal-tint)')
-              .attr('stroke', '#E0C37F').attr('stroke-width', .55);
+          const blossom = flowers.append('g').attr('transform', `translate(0,${CIRCLE_R + 12}) scale(4)`);
+          [1, -1].forEach(side => {
+            const leaf = blossom.append('g').attr('class', 'kinship-leaf').attr('transform', `scale(${side},1)`);
+            leaf.append('path').attr('d', 'M-1,5 C-5,5 -9,8 -12,13 C-7,13 -3,11 -1,5 Z')
+              .attr('fill', '#709F43').attr('stroke', '#507732').attr('stroke-width', .38);
+            leaf.append('path').attr('d', 'M-2,6 Q-6,10 -11,12 M-5,9 L-5.8,7.8 M-6.7,10 L-8.1,9.2 M-7,10.2 L-6,11.4')
+              .attr('fill', 'none').attr('stroke', '#BCD281').attr('stroke-width', .36).attr('stroke-linecap', 'round');
           });
-          blossom.append('circle').attr('r', 3.2).attr('fill', '#E5C576');
+          [45, 135, 225, 315].forEach(angle => {
+            const petal = blossom.append('g').attr('class', 'kinship-petal').attr('transform', `rotate(${angle})`);
+            petal.append('ellipse')
+              .attr('cy', -8).attr('rx', 5.1).attr('ry', 7.3)
+              .attr('fill', 'url(#kinship-petal-tint)').attr('stroke', '#DDAA10').attr('stroke-width', .48);
+            petal.append('path').attr('d', 'M0,-3 Q-.7,-8 0,-13.2 M-.25,-6.5 Q-1.4,-7.5 -2.9,-9.2 M-.2,-8.2 Q1.3,-9.4 2.6,-11')
+              .attr('fill', 'none').attr('stroke', '#C59112').attr('stroke-width', .28)
+              .attr('stroke-linecap', 'round').attr('opacity', .55);
+          });
+          blossom.append('circle').attr('r', 3.2).attr('fill', '#DEAA17');
+          [0, 60, 120, 180, 240, 300].forEach(angle => {
+            blossom.append('circle').attr('cy', -1.85).attr('r', .43)
+              .attr('transform', `rotate(${angle})`).attr('fill', '#FFF17B');
+          });
         }
 
         setTimeout(updateMinimap, 500);
@@ -1987,13 +1992,19 @@
             if (ancestor) points.push(ancestor);
           }
           const [minX, maxX] = d3.extent(points, node => node._x);
-          const [minY, maxY] = d3.extent(points, node => node._y);
+          let [minY, maxY] = d3.extent(points, node => node._y);
+          g.selectAll('.kinship-flower').each(function (node) {
+            const bounds = this.getBBox();
+            minY = Math.min(minY, node._y + bounds.y);
+            maxY = Math.max(maxY, node._y + bounds.y + bounds.height);
+          });
           document.getElementById('info-panel').style.display = 'none';
           currentSelected = null;
           function focusResult(duration) {
             const { top, bottom } = treeViewport();
+            const yPadding = compactTreeView.matches ? (branches ? 50 : 90) : 200;
             const scale = Math.min(1, width / (maxX - minX + 360),
-              (bottom - top) / (maxY - minY + (compactTreeView.matches ? 90 : 200)));
+              (bottom - top) / (maxY - minY + yPadding));
             return centerOnNode((minX + maxX) / 2, (minY + maxY) / 2, scale, duration);
           }
           const version = searchRevealVersion;
