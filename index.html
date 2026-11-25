@@ -629,7 +629,7 @@
     <div class="stats" id="stats-line">加载中…</div>
     <button id="data-file-button" type="button">连接 JSON，启用直接保存</button>
     <input id="data-file-input" type="file" accept="application/json,.json" hidden>
-    <div id="save-status"></div>
+    <div id="save-status" role="status"></div>
     <div class="btn-grid">
       <button class="ctrl-btn" id="btn-expand" title="展开全部">展开全部</button>
       <button class="ctrl-btn" id="btn-collapse" title="收起全部">收起全部</button>
@@ -877,7 +877,8 @@
           byte.toString(16).padStart(2, '0')).join('');
         githubToken = token;
         githubDialog.close();
-        document.getElementById('info-edit-btn').click();
+        const editButton = document.getElementById('info-edit-btn');
+        if (editButton.style.display !== 'none') editButton.click();
       } catch (error) {
         githubMessage.textContent = error.message;
       } finally {
